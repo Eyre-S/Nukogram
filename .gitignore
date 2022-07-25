@@ -1,6 +1,7 @@
 .idea/
 .gradle/
 build/
+TMessagesProj/.cxx
 obj/
 *.iml
 local.properties

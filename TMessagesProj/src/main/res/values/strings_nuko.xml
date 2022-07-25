@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="NukoAppName" translatable="false">Nukogram</string>
+	<string name="NukoAppNameBeta" translatable="false">Nukogram.BETA</string>
+	<string name="AppIconTelegramDefault">TOrigin</string>
+	<string name="AppIconNuko">Nuko Vanilla</string>
+	<string name="AppIconNekoXNarrow">nArrow</string>
+</resources>

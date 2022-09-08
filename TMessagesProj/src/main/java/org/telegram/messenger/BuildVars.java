@@ -29,6 +29,9 @@ public class BuildVars {
     // todo nukox playstore app
     public static String PLAYSTORE_APP_URL = "";
 
+    // TODO: Huawei App Register
+    public static String HUAWEI_APP_ID = "101184875";
+
     // You can use this flag to disable Google Play Billing (If you're making fork and want it to be in Google Play)
     public static boolean IS_BILLING_UNAVAILABLE = false;
 
@@ -40,7 +43,7 @@ public class BuildVars {
     }
 
     public static boolean useInvoiceBilling() {
-        return DEBUG_VERSION || isStandaloneApp() || isBetaApp();
+        return DEBUG_VERSION || isStandaloneApp() || isBetaApp() || isHuaweiStoreApp();
     }
 
     private static Boolean standaloneApp;
@@ -57,5 +60,10 @@ public class BuildVars {
             betaApp = ApplicationLoader.applicationContext != null && (BuildConfig.PACKAGE_ID+".beta").equals(ApplicationLoader.applicationContext.getPackageName());
         }
         return betaApp;
+    }
+
+
+    public static boolean isHuaweiStoreApp() {
+        return ApplicationLoader.isHuaweiStoreBuild();
     }
 }

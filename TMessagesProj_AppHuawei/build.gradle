@@ -19,20 +19,64 @@ configurations.all {
 dependencies {
     implementation project(':TMessagesProj')
     implementation 'androidx.multidex:multidex:2.0.1'
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.6'
     implementation files('../TMessagesProj/libs/libgsaverification-client.aar')
 
-    implementation 'com.google.firebase:firebase-messaging:22.0.0'
+    implementation 'com.google.firebase:firebase-messaging:23.0.6'
     implementation 'com.huawei.hms:push:6.5.0.300'
     implementation 'com.huawei.hms:maps:6.6.0.300'
     implementation 'com.huawei.hms:location:6.4.0.300'
 }
 
-android {
-    compileSdkVersion 31
-    buildToolsVersion '31.0.0'
 
-    defaultConfig.applicationId = APP_PACKAGE
+def proj_application_id = APP_PACKAGE
+def proj_telegram_version = OFFICIAL_VERSION
+def proj_telegram_build = Integer.parseInt(OFFICIAL_BUILD)
+def proj_beta_enabled = Boolean.parseBoolean(NUKO_BETA)
+def proj_beta_stamp = NUKO_BETA_STAMP
+def proj_application_version = "${NUKO_VERSION}${proj_beta_enabled?"-β"+proj_beta_stamp:""}-huawei+tg${proj_telegram_version}"
+def proj_application_build = Integer.parseInt(NUKO_BUILD)*100000 + proj_telegram_build
+
+def proj_tg_app_id = Integer.parseInt(TELEGRAM_APP_ID)
+def proj_tg_app_hash = TELEGRAM_APP_HASH
+
+def proj_target_sdk = Integer.parseInt(ANDROID_TARGET_SDK_VERSION)
+def proj_compile_sdk = Integer.parseInt(ANDROID_COMPILE_SDK_VERSION)
+def proj_min_sdk = Integer.parseInt(ANDROID_MIN_SDK_VERSION)
+def proj_build_tool_version = ANDROID_BUILD_TOOL_VERSION
+def proj_ndk_version = "21.4.7075529"
+def proj_java = JavaVersion.VERSION_1_8
+
+def signing_keystore_pwd = null
+def signing_key_alias = null
+def signing_key_pwd = null
+Properties properties
+def base64 = System.getenv("LOCAL_PROPERTIES")
+if (base64 != null && !base64.isBlank()) {
+    properties = new Properties()
+    properties.load(new ByteArrayInputStream(Base64.decoder.decode(base64)))
+} else if (project.rootProject.file("local.properties").exists()) {
+    properties = new Properties()
+    properties.load(project.rootProject.file("local.properties").newDataInputStream())
+}
+if (properties != null) {
+    signing_keystore_pwd = properties.getProperty("SIGNING_KEYSTORE_PWD")
+    signing_key_alias = properties.getProperty("SIGNING_KEY_ALIAS")
+    signing_key_pwd = properties.getProperty("SIGNING_KEY_PWD")
+}
+signing_keystore_pwd = signing_keystore_pwd ?: System.getenv("SIGNING_KEYSTORE_PWD")
+signing_key_alias = signing_key_alias ?: System.getenv("SIGNING_KEY_ALIAS")
+signing_key_pwd = signing_key_pwd ?: System.getenv("SIGNING_KEY_PWD")
+
+
+if (signing_keystore_pwd == null) print "[BUILD_CONFIG]Release signing config not set, debugging will user debug default signing."
+
+
+android {
+    compileSdkVersion proj_compile_sdk
+    buildToolsVersion proj_build_tool_version
+
+    defaultConfig.applicationId = proj_application_id
 
     sourceSets.main.jniLibs.srcDirs = ['../TMessagesProj/jni/']
 
@@ -42,30 +86,23 @@ android {
         disable 'BlockedPrivateApi'
     }
 
-    dexOptions {
-        jumboMode = true
-    }
+//    dexOptions {
+//        jumboMode = true
+//    }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility proj_java
+        targetCompatibility proj_java
 
         coreLibraryDesugaringEnabled true
     }
-
+    
     signingConfigs {
-        debug {
-            storeFile file("../TMessagesProj/config/release.keystore")
-            storePassword RELEASE_STORE_PASSWORD
-            keyAlias RELEASE_KEY_ALIAS
-            keyPassword RELEASE_KEY_PASSWORD
-        }
-
         release {
             storeFile file("../TMessagesProj/config/release.keystore")
-            storePassword RELEASE_STORE_PASSWORD
-            keyAlias RELEASE_KEY_ALIAS
-            keyPassword RELEASE_KEY_PASSWORD
+            storePassword signing_keystore_pwd
+            keyAlias signing_key_alias
+            keyPassword signing_key_pwd
         }
     }
 
@@ -73,7 +110,7 @@ android {
         debug {
             debuggable true
             jniDebuggable true
-            signingConfig signingConfigs.debug
+            signingConfig signing_keystore_pwd == null ? signingConfigs.debug : signingConfigs.release
             minifyEnabled false
             shrinkResources false
             multiDexEnabled true
@@ -114,12 +151,12 @@ android {
                 manifest.srcFile '../TMessagesProj/config/release/AndroidManifest_SDK23.xml'
             }
             ext {
-                abiVersionCode = 9
+                abiVersionCode = 8 // set huawei version to 8 (official is 9)
             }
         }
     }
 
-    defaultConfig.versionCode = Integer.parseInt(APP_VERSION_CODE)
+    defaultConfig.versionCode = proj_application_build
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
@@ -136,10 +173,17 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 19
-        targetSdkVersion 30
-        versionName APP_VERSION_NAME
-        ndkVersion "21.4.7075529"
+        minSdkVersion proj_min_sdk
+        targetSdkVersion proj_target_sdk
+        versionName proj_application_version
+        ndkVersion proj_ndk_version
+
+        buildConfigField 'String', 'PACKAGE_ID', "\"$proj_application_id\""
+        buildConfigField 'int', 'TELEGRAM_APP_ID', "$proj_tg_app_id"
+        buildConfigField 'String', 'TELEGRAM_APP_HASH', "\"$proj_tg_app_hash\""
+// will generated by default
+//        buildConfigField 'String', 'NUKO_VERSION', "$proj_application_version"
+//        buildConfigField 'int', 'NUKO_BUILD', "$proj_application_build"
 
         multiDexEnabled true
 
@@ -148,7 +192,7 @@ android {
         externalNativeBuild {
             cmake {
                 version '3.10.2'
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16', "-j=16"
+                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-19', "-j=19"
             }
         }
     }

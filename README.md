@@ -1,39 +1,43 @@
-## Telegram messenger for Android
+# Nukogram
 
-[Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
-This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
+> [Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
+> This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
 
-## Creating your Telegram Application
+**Nukogram** is an free and open source fork from [Telegram App for Android](https://github.com/DrKLO/Telegram),
+~~with some features from [Nekogram]() & [NekoX](https://github.com/NekoX-Dev/NekoX/) rebuilt~~,
+~~with some features originally added~~.
 
-We welcome all developers to use our API and source code to create applications on our platform.
-There are several things we require from **all developers** for the moment.
+## Changes with Official
 
-1. [**Obtain your own api_id**](https://core.telegram.org/api/obtaining_api_id) for your application.
-2. Please **do not** use the name Telegram for your app — or make sure your users understand that it is unofficial.
-3. Kindly **do not** use our standard logo (white paper plane in a blue circle) as your app's logo.
-3. Please study our [**security guidelines**](https://core.telegram.org/mtproto/security_guidelines) and take good care of your users' data and privacy.
-4. Please remember to publish **your** code too in order to comply with the licences.
+- Launcher icons
+  - newly *Nuko Vanilla* based on nekogram (as default)
+  - transplant *nArrow* from nekogram-na fork.
 
-### API, Protocol documentation
+#### technical changes
 
-Telegram API manuals: https://core.telegram.org/api
+- [technical] removed huawei (agconnect) build.
 
-MTproto protocol manuals: https://core.telegram.org/mtproto
+## Reproducing Build Guide
 
-### Compilation Guide
+*Note: We support building on Windows.*
 
-**Note**: In order to support [reproducible builds](https://core.telegram.org/reproducible-builds), this repo contains dummy release.keystore,  google-services.json and filled variables inside BuildVars.java. Before publishing your own APKs please make sure to replace all these files with your own.
-
-You will require Android Studio 3.4, Android NDK rev. 20 and Android SDK 8.1
-
-1. Download the Telegram source code from https://github.com/DrKLO/Telegram ( git clone https://github.com/DrKLO/Telegram.git )
-2. Copy your release.keystore into TMessagesProj/config
-3. Fill out RELEASE_KEY_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_STORE_PASSWORD in gradle.properties to access your  release.keystore
-4.  Go to https://console.firebase.google.com/, create two android apps with application IDs org.telegram.messenger and org.telegram.messenger.beta, turn on firebase messaging and download google-services.json, which should be copied to the same folder as TMessagesProj.
-5. Open the project in the Studio (note that it should be opened, NOT imported).
-6. Fill out values in TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java – there’s a link for each of the variables showing where and which data to obtain.
-7. You are ready to compile Telegram.
-
-### Localization
-
-We moved all translations to https://translations.telegram.org/en/android/. Please use it.
+1. Clone this repository to your workspace.
+2. Make sure that you have Android SDK 8.1 and Android NDK rev. 20, and an IDE like Android Studio or IntellijIDEA(it's fine too).
+3. Open this project in your IDE.
+4. *(Optional)* [Obtain your own telegram `api_id` and `api_hash`](https://core.telegram.org/api/obtaining_api_id),
+   write the value to `TELEGRAM_APP_ID` and `TELEGRAM_APP_HASH` in `./gradle.properties`.
+   (if not, you will use Nukogram app_id).
+5. *(Optional)* Set your own app package-name in field `APP_PACKAGE` in `./gradle.properties`.
+   (if not, you will use nukogram package-name(cc.sukazyo.nukogram) as your app package-name,
+   **it may cause conflict with Nukogram Official App.**)
+6. *(Optional)* Go to [Google Firebase Console](https://console.firebase.google.com/),
+   create two android apps with application IDs `${APP_PACKAGE}` and `${APP_PACKAGE}.beta`
+   (the APP_PACKAGE is just the app package-name you set in [3.]),
+   turn on firebase messaging and download `google-services.json`,
+   overwrite `./TMessagesProj/google-services.json` with the downloaded.
+   (if non set, or skiped [3.], you will use google service (like GCM/FCM) owned by Nukogram Official.)
+7. *(Optional only debug build)* generate your own android-release.keystore, put it to `./TMessagesProj/config/release.keystore`,
+   and set `SIGNING_KEYSTORE_PWD`(your keystore password), `SIGNING_KEY_ALIAS`(your keystore key alias), `SIGNING_KEY_PWD`(your keystore key password) in `./local.properties`.
+   (if not, your apk will sign by a key generated randomly by android sdk, and you will recieve a warning "Release signing config not set";
+   if you are building with release config, you will get an error that signing key unavailable)
+8. Now you can build and run it, just as a normal Android App.

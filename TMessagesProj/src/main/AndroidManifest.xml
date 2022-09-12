@@ -103,7 +103,7 @@
         </activity-alias>
     
         <activity-alias
-                android:enabled="true"
+                android:enabled="false"
                 android:name="org.telegram.messenger.NekoNarrowIcon"
                 android:targetActivity="org.telegram.ui.LaunchActivity"
                 android:icon="@mipmap/icon_nekox_na_launcher"
@@ -118,7 +118,7 @@
         </activity-alias>
         
         <activity-alias
-            android:enabled="true"
+            android:enabled="false"
             android:name="org.telegram.messenger.DefaultIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
             android:icon="@mipmap/ic_launcher"

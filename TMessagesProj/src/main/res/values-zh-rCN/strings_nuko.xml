@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-	<string name="NukoAppName">猫报</string>
-	<string name="NukoAppNameBeta">猫报·β</string>
-	<string name="NukoTitleName">猫报</string>
-	<string name="NukoTitleNameBeta">猫报·β</string>
+	<string name="NukoAppName">猫°报</string>
+	<string name="NukoAppNameBeta">猫°报·β</string>
+	<string name="NukoTitleName">猫°报</string>
+	<string name="NukoTitleNameBeta">猫°报·β</string>
 	<string name="AppIconTelegramDefault">电报</string>
 	<string name="AppIconNuko">Nuko 自然</string>
 <!--	<string name="AppIconNekoXNarrow">nArrow</string>-->

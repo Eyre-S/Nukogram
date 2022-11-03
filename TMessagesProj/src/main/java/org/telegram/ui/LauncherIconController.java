@@ -15,7 +15,7 @@ public class LauncherIconController {
             }
         }
 
-        setIcon(LauncherIcon.NUKO);
+        setIcon(LauncherIcon.NUKO); // nuko: change default launcher icon
     }
 
     public static boolean isEnabled(LauncherIcon icon) {
@@ -34,8 +34,10 @@ public class LauncherIconController {
     }
 
     public enum LauncherIcon {
+        // nuko: add Nuko custom icons below:
         NUKO("NukoDefaultIcon", R.drawable.icon_nuko_background_sa, R.mipmap.icon_nekogram_foreground, R.string.AppIconNuko),
         NEKOX_NA("NekoNarrowIcon", R.mipmap.icon_nekox_na_foreground, R.color.color_null, R.string.AppIconNekoXNarrow),
+        // end nuko; telegram default below
         DEFAULT("DefaultIcon", R.drawable.icon_background_sa, R.mipmap.icon_foreground_sa, R.string.AppIconTelegramDefault),
         VINTAGE("VintageIcon", R.drawable.icon_6_background_sa, R.mipmap.icon_6_foreground_sa, R.string.AppIconVintage),
         AQUA("AquaIcon", R.drawable.icon_4_background_sa, R.mipmap.icon_foreground_sa, R.string.AppIconAqua),

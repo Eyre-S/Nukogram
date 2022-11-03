@@ -14,19 +14,19 @@ import android.os.Build;
 
 public class BuildVars {
 
-    public static boolean DEBUG_VERSION = BuildConfig.DEBUG;
-    public static boolean LOGS_ENABLED = BuildConfig.DEBUG;
-    public static boolean DEBUG_PRIVATE_VERSION = BuildConfig.DEBUG;
-    public static boolean USE_CLOUD_STRINGS = false;
-    public static boolean CHECK_UPDATES = false;
+    public static boolean DEBUG_VERSION = BuildConfig.DEBUG; // nuko: use BuildConfig
+    public static boolean LOGS_ENABLED = BuildConfig.DEBUG; // nuko: use BuildConfig
+    public static boolean DEBUG_PRIVATE_VERSION = BuildConfig.DEBUG; // nuko: use BuildConfig
+    public static boolean USE_CLOUD_STRINGS = false; // nuko: use BuildConfig
+    public static boolean CHECK_UPDATES = false; // nuko: use BuildConfig
     public static boolean NO_SCOPED_STORAGE = Build.VERSION.SDK_INT <= 29;
-    public static int BUILD_VERSION = BuildConfig.VERSION_CODE;
-    public static String BUILD_VERSION_STRING = BuildConfig.VERSION_NAME;
-    public static int APP_ID = BuildConfig.TELEGRAM_APP_ID;
-    public static String APP_HASH = BuildConfig.TELEGRAM_APP_HASH;
-    //todo what is this?
+    public static int BUILD_VERSION = BuildConfig.VERSION_CODE; // nuko: use BuildConfig
+    public static String BUILD_VERSION_STRING = BuildConfig.VERSION_NAME; // nuko: use BuildConfig
+    public static int APP_ID = BuildConfig.TELEGRAM_APP_ID; // nuko: use BuildConfig
+    public static String APP_HASH = BuildConfig.TELEGRAM_APP_HASH; // nuko: use BuildConfig
+    // nuko: todo what is this?
     public static String SMS_HASH = isStandaloneApp() ? "w0lkcmTZkKh" : (DEBUG_VERSION ? "O2P2z+/jBpJ" : "oLeq9AcOZkT");
-    // todo nukox playstore app
+    // nuko: todo playstore app
     public static String PLAYSTORE_APP_URL = "";
 
     // TODO: Huawei App Register
@@ -49,6 +49,7 @@ public class BuildVars {
     private static Boolean standaloneApp;
     public static boolean isStandaloneApp() {
         if (standaloneApp == null) {
+            // nuko: use BuildConfig package id
             standaloneApp = ApplicationLoader.applicationContext != null && (BuildConfig.PACKAGE_ID+".web").equals(ApplicationLoader.applicationContext.getPackageName());
         }
         return standaloneApp;
@@ -57,6 +58,7 @@ public class BuildVars {
     private static Boolean betaApp;
     public static boolean isBetaApp() {
         if (betaApp == null) {
+            // nuko: use BuildConfig package id
             betaApp = ApplicationLoader.applicationContext != null && (BuildConfig.PACKAGE_ID+".beta").equals(ApplicationLoader.applicationContext.getPackageName());
         }
         return betaApp;

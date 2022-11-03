@@ -40,6 +40,9 @@ dependencies {
     implementation 'com.google.mlkit:language-id:17.0.4'
     implementation 'com.android.billingclient:billing:5.0.0'
     implementation files('libs/libgsaverification-client.aar')
+    
+//    implementation "com.microsoft.appcenter:appcenter-distribute:3.3.1"
+//    implementation "com.microsoft.appcenter:appcenter-crashes:3.3.1"
 
     //noinspection GradleDependency
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.6'
@@ -70,17 +73,17 @@ def signing_key_alias = null
 def signing_key_pwd = null
 Properties properties
 def base64 = System.getenv("LOCAL_PROPERTIES")
-if (base64 != null && !base64.isBlank()) {
-    properties = new Properties()
-    properties.load(new ByteArrayInputStream(Base64.decoder.decode(base64)))
-} else if (project.rootProject.file("local.properties").exists()) {
-    properties = new Properties()
-    properties.load(project.rootProject.file("local.properties").newDataInputStream())
-}
+//if (base64 != null && !base64.isBlank()) {
+//    properties = new Properties()
+//    properties.load(new ByteArrayInputStream(Base64.decoder.decode(base64)))
+//} else if (project.rootProject.file("local.properties").exists()) {
+//    properties = new Properties()
+//    properties.load(project.rootProject.file("local.properties").newDataInputStream())
+//}
 if (properties != null) {
-    signing_keystore_pwd = properties.getProperty("SIGNING_KEYSTORE_PWD")
-    signing_key_alias = properties.getProperty("SIGNING_KEY_ALIAS")
-    signing_key_pwd = properties.getProperty("SIGNING_KEY_PWD")
+    signing_keystore_pwd = getProps("SIGNING_KEYSTORE_PWD")
+    signing_key_alias = getProps("SIGNING_KEY_ALIAS")
+    signing_key_pwd = getProps("SIGNING_KEY_PWD")
 }
 signing_keystore_pwd = signing_keystore_pwd ?: System.getenv("SIGNING_KEYSTORE_PWD")
 signing_key_alias = signing_key_alias ?: System.getenv("SIGNING_KEY_ALIAS")
@@ -148,33 +151,33 @@ android {
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
         }
 
-        HA_private {
-            debuggable false
-            jniDebuggable false
-            signingConfig signingConfigs.debug
-            applicationIdSuffix ".beta"
-            minifyEnabled true
-            multiDexEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
-            ndk.debugSymbolLevel = 'FULL'
-            buildConfigField "String", "APP_CENTER_HASH", "\"" + getProps("APP_CENTER_HASH_PRIVATE") + "\""
-            buildConfigField "boolean", "DEBUG_VERSION", "true"
-            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
-        }
-
-        HA_public {
-            debuggable false
-            jniDebuggable false
-            signingConfig signingConfigs.debug
-            applicationIdSuffix ".beta"
-            minifyEnabled true
-            multiDexEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            ndk.debugSymbolLevel = 'FULL'
-            buildConfigField "String", "APP_CENTER_HASH", "\"" + getProps("APP_CENTER_HASH_PUBLIC") + "\""
-            buildConfigField "boolean", "DEBUG_VERSION", "true"
-            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
-        }
+//        HA_private {
+//            debuggable false
+//            jniDebuggable false
+//            signingConfig signingConfigs.debug
+//            applicationIdSuffix ".beta"
+//            minifyEnabled true
+//            multiDexEnabled true
+//            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
+//            ndk.debugSymbolLevel = 'FULL'
+//            buildConfigField "String", "APP_CENTER_HASH", "\"" + getProps("APP_CENTER_HASH_PRIVATE") + "\""
+//            buildConfigField "boolean", "DEBUG_VERSION", "true"
+//            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
+//        }
+//
+//        HA_public {
+//            debuggable false
+//            jniDebuggable false
+//            signingConfig signingConfigs.debug
+//            applicationIdSuffix ".beta"
+//            minifyEnabled true
+//            multiDexEnabled true
+//            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+//            ndk.debugSymbolLevel = 'FULL'
+//            buildConfigField "String", "APP_CENTER_HASH", "\"" + getProps("APP_CENTER_HASH_PUBLIC") + "\""
+//            buildConfigField "boolean", "DEBUG_VERSION", "true"
+//            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
+//        }
 
 //        standalone {
 //            debuggable false
@@ -207,9 +210,12 @@ android {
         manifest.srcFile 'config/debug/AndroidManifest.xml'
     }
     
-    sourceSets.HA {
-        manifest.srcFile 'config/debug/AndroidManifest.xml'
-    }
+//    sourceSets.HA_private {
+//        manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest.xml'
+//    }
+//    sourceSets.HA_public {
+//        manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest.xml'
+//    }
 
 //    sourceSets.standalone {
 //        manifest.srcFile 'config/release/AndroidManifest.xml'

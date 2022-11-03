@@ -21,6 +21,17 @@ dependencies {
     implementation files('../TMessagesProj/libs/libgsaverification-client.aar')
 }
 
+def getProps(String propName) {
+    def propsFile = rootProject.file('local.properties')
+    if (propsFile.exists()) {
+        def props = new Properties()
+        props.load(new FileInputStream(propsFile))
+        return props[propName]
+    } else {
+        return ""
+    }
+}
+
 
 def proj_application_id = APP_PACKAGE
 def proj_telegram_version = OFFICIAL_VERSION
@@ -112,17 +123,6 @@ android {
             ndk.debugSymbolLevel = 'FULL'
         }
 
-        HA {
-            debuggable false
-            jniDebuggable false
-            signingConfig signingConfigs.debug
-            applicationIdSuffix ".beta"
-            minifyEnabled true
-            multiDexEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
-            ndk.debugSymbolLevel = 'FULL'
-        }
-
 //        standalone {
 //            debuggable false
 //            jniDebuggable false
@@ -147,10 +147,6 @@ android {
     }
 
     sourceSets.debug {
-        manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest.xml'
-    }
-
-    sourceSets.HA {
         manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest.xml'
     }
 

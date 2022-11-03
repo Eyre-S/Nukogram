@@ -143,9 +143,26 @@ android {
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
+            buildConfigField "String", "APP_CENTER_HASH", "\"\""
+            buildConfigField "boolean", "DEBUG_VERSION", "true"
+            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
         }
 
-        HA {
+        HA_private {
+            debuggable false
+            jniDebuggable false
+            signingConfig signingConfigs.debug
+            applicationIdSuffix ".beta"
+            minifyEnabled true
+            multiDexEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
+            ndk.debugSymbolLevel = 'FULL'
+            buildConfigField "String", "APP_CENTER_HASH", "\"" + getProps("APP_CENTER_HASH_PRIVATE") + "\""
+            buildConfigField "boolean", "DEBUG_VERSION", "true"
+            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
+        }
+
+        HA_public {
             debuggable false
             jniDebuggable false
             signingConfig signingConfigs.debug
@@ -154,6 +171,9 @@ android {
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
+            buildConfigField "String", "APP_CENTER_HASH", "\"" + getProps("APP_CENTER_HASH_PUBLIC") + "\""
+            buildConfigField "boolean", "DEBUG_VERSION", "true"
+            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
         }
 
 //        standalone {
@@ -163,6 +183,9 @@ android {
 //            multiDexEnabled true
 //            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
 //            ndk.debugSymbolLevel = 'FULL'
+//        buildConfigField "String", "APP_CENTER_HASH", "\"\""
+//        buildConfigField "boolean", "DEBUG_VERSION", "false"
+//        buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
 //        }
 
         release {
@@ -174,6 +197,9 @@ android {
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
+            buildConfigField "String", "APP_CENTER_HASH", "\"\""
+            buildConfigField "boolean", "DEBUG_VERSION", "false"
+            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
         }
     }
     
@@ -292,4 +318,15 @@ android {
     
 }
 
+
+def getProps(String propName) {
+    def propsFile = rootProject.file('local.properties')
+    if (propsFile.exists()) {
+        def props = new Properties()
+        props.load(new FileInputStream(propsFile))
+        return props[propName]
+    } else {
+        return "";
+    }
+}
 apply plugin: 'com.google.gms.google-services'

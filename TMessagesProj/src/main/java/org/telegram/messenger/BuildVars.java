@@ -12,11 +12,15 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 
-public class BuildVars {
+import com.android.billingclient.api.ProductDetails;
 
-    public static boolean DEBUG_VERSION = BuildConfig.DEBUG; // nuko: use BuildConfig
-    public static boolean LOGS_ENABLED = BuildConfig.DEBUG; // nuko: use BuildConfig
-    public static boolean DEBUG_PRIVATE_VERSION = BuildConfig.DEBUG; // nuko: use BuildConfig
+import java.util.Objects;
+
+public class BuildVars {
+    
+    public static boolean DEBUG_VERSION = BuildConfig.DEBUG_VERSION;
+    public static boolean LOGS_ENABLED = BuildConfig.DEBUG_VERSION;
+    public static boolean DEBUG_PRIVATE_VERSION = BuildConfig.DEBUG_PRIVATE_VERSION;
     public static boolean USE_CLOUD_STRINGS = false; // nuko: use BuildConfig
     public static boolean CHECK_UPDATES = false; // nuko: use BuildConfig
     public static boolean NO_SCOPED_STORAGE = Build.VERSION.SDK_INT <= 29;
@@ -28,9 +32,10 @@ public class BuildVars {
     public static String SMS_HASH = isStandaloneApp() ? "w0lkcmTZkKh" : (DEBUG_VERSION ? "O2P2z+/jBpJ" : "oLeq9AcOZkT");
     // nuko: todo playstore app
     public static String PLAYSTORE_APP_URL = "";
+    public static String GOOGLE_AUTH_CLIENT_ID = "";
 
     // TODO: Huawei App Register
-    public static String HUAWEI_APP_ID = "101184875";
+    public static String HUAWEI_APP_ID = "";
 
     // You can use this flag to disable Google Play Billing (If you're making fork and want it to be in Google Play)
     public static boolean IS_BILLING_UNAVAILABLE = false;
@@ -43,7 +48,23 @@ public class BuildVars {
     }
 
     public static boolean useInvoiceBilling() {
-        return DEBUG_VERSION || isStandaloneApp() || isBetaApp() || isHuaweiStoreApp();
+        return DEBUG_VERSION || isStandaloneApp() || isBetaApp() || isHuaweiStoreApp() || hasDirectCurrency();
+    }
+
+    private static boolean hasDirectCurrency() {
+        if (!BillingController.getInstance().isReady() || BillingController.PREMIUM_PRODUCT_DETAILS == null) {
+            return false;
+        }
+        for (ProductDetails.SubscriptionOfferDetails offerDetails : BillingController.PREMIUM_PRODUCT_DETAILS.getSubscriptionOfferDetails()) {
+            for (ProductDetails.PricingPhase phase : offerDetails.getPricingPhases().getPricingPhaseList()) {
+                for (String cur : MessagesController.getInstance(UserConfig.selectedAccount).directPaymentsCurrency) {
+                    if (Objects.equals(phase.getPriceCurrencyCode(), cur)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private static Boolean standaloneApp;

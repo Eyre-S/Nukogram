@@ -74,6 +74,7 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import cc.sukazyo.nukos.feature.LinkNya;
 import com.google.android.gms.common.api.Status;
 import com.google.firebase.appindexing.Action;
 import com.google.firebase.appindexing.FirebaseUserActions;
@@ -2062,6 +2063,11 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                                                 }
                                             }
                                         }
+//                                    } else if (host.equals("nuko.sukazyo.cc")) { // nuko: added nuko link support
+//                                        String path = data.getPath();
+//                                        if (LinkNya.isNyaPath(path)) { // nuko: nuko link nya support
+//                                            LinkNya.nya();
+//                                        }
                                     }
                                     break;
                                 }
@@ -2388,6 +2394,8 @@ public class LaunchActivity extends BasePermissionsActivity implements ActionBar
                                         newContactName = data.getQueryParameter("name");
                                         newContactPhone = data.getQueryParameter("phone");
                                         newContact = true;
+                                    } else if (LinkNya.isNyaTgLink(url)) { // nuko: neko link nya support
+                                        LinkNya.nya();
                                     } else {
                                         unsupportedUrl = url.replace("tg://", "").replace("tg:", "");
                                         int index;

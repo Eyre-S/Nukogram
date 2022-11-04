@@ -71,8 +71,8 @@ def proj_java = JavaVersion.VERSION_1_8
 def signing_keystore_pwd = null
 def signing_key_alias = null
 def signing_key_pwd = null
-Properties properties
-def base64 = System.getenv("LOCAL_PROPERTIES")
+//Properties properties
+//def base64 = System.getenv("LOCAL_PROPERTIES")
 //if (base64 != null && !base64.isBlank()) {
 //    properties = new Properties()
 //    properties.load(new ByteArrayInputStream(Base64.decoder.decode(base64)))
@@ -80,11 +80,11 @@ def base64 = System.getenv("LOCAL_PROPERTIES")
 //    properties = new Properties()
 //    properties.load(project.rootProject.file("local.properties").newDataInputStream())
 //}
-if (properties != null) {
+//if (properties != null) {
     signing_keystore_pwd = getProps("SIGNING_KEYSTORE_PWD")
     signing_key_alias = getProps("SIGNING_KEY_ALIAS")
     signing_key_pwd = getProps("SIGNING_KEY_PWD")
-}
+//}
 signing_keystore_pwd = signing_keystore_pwd ?: System.getenv("SIGNING_KEYSTORE_PWD")
 signing_key_alias = signing_key_alias ?: System.getenv("SIGNING_KEY_ALIAS")
 signing_key_pwd = signing_key_pwd ?: System.getenv("SIGNING_KEY_PWD")
@@ -332,7 +332,7 @@ def getProps(String propName) {
         props.load(new FileInputStream(propsFile))
         return props[propName]
     } else {
-        return "";
+        return null
     }
 }
 apply plugin: 'com.google.gms.google-services'

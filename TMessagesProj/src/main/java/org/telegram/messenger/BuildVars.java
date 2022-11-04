@@ -34,7 +34,7 @@ public class BuildVars {
     public static String PLAYSTORE_APP_URL = "";
     public static String GOOGLE_AUTH_CLIENT_ID = "";
 
-    // TODO: Huawei App Register
+    // nuko: todo Huawei App Register
     public static String HUAWEI_APP_ID = "";
 
     // You can use this flag to disable Google Play Billing (If you're making fork and want it to be in Google Play)

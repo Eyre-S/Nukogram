@@ -1,3 +1,5 @@
+import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
+
 apply plugin: 'com.android.application'
 
 repositories {
@@ -39,6 +41,7 @@ dependencies {
     implementation 'com.stripe:stripe-android:2.0.2'
     implementation 'com.google.mlkit:language-id:17.0.4'
     implementation 'com.android.billingclient:billing:5.0.0'
+    implementation 'com.google.code.gson:gson:2.10'
     implementation files('libs/libgsaverification-client.aar')
     
 //    implementation "com.microsoft.appcenter:appcenter-distribute:3.3.1"
@@ -92,6 +95,7 @@ signing_key_pwd = signing_key_pwd ?: System.getenv("SIGNING_KEY_PWD")
 
 if (signing_keystore_pwd == null) print "[BUILD_CONFIG]Release signing config not set, debugging will user debug default signing."
 
+def isWindows = String.valueOf(DefaultNativePlatform.currentOperatingSystem.toFamilyName() == OperatingSystemFamily.WINDOWS)
 
 android {
     compileSdkVersion proj_compile_sdk
@@ -148,7 +152,8 @@ android {
             ndk.debugSymbolLevel = 'FULL'
             buildConfigField "String", "APP_CENTER_HASH", "\"\""
             buildConfigField "boolean", "DEBUG_VERSION", "true"
-            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
+            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
+            buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
         }
 
 //        HA_private {
@@ -163,6 +168,7 @@ android {
 //            buildConfigField "String", "APP_CENTER_HASH", "\"" + getProps("APP_CENTER_HASH_PRIVATE") + "\""
 //            buildConfigField "boolean", "DEBUG_VERSION", "true"
 //            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
+//            buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
 //        }
 //
 //        HA_public {
@@ -177,6 +183,7 @@ android {
 //            buildConfigField "String", "APP_CENTER_HASH", "\"" + getProps("APP_CENTER_HASH_PUBLIC") + "\""
 //            buildConfigField "boolean", "DEBUG_VERSION", "true"
 //            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
+//            buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
 //        }
 
 //        standalone {
@@ -186,9 +193,10 @@ android {
 //            multiDexEnabled true
 //            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
 //            ndk.debugSymbolLevel = 'FULL'
-//        buildConfigField "String", "APP_CENTER_HASH", "\"\""
-//        buildConfigField "boolean", "DEBUG_VERSION", "false"
-//        buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
+//            buildConfigField "String", "APP_CENTER_HASH", "\"\""
+//            buildConfigField "boolean", "DEBUG_VERSION", "false"
+//            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
+//            buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
 //        }
 
         release {
@@ -203,6 +211,7 @@ android {
             buildConfigField "String", "APP_CENTER_HASH", "\"\""
             buildConfigField "boolean", "DEBUG_VERSION", "false"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
+            buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
         }
     }
     

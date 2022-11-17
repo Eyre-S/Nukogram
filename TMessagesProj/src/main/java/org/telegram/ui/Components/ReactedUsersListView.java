@@ -8,16 +8,13 @@ import android.content.Context;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.text.TextUtils;
 import android.util.LongSparseArray;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -36,6 +33,7 @@ import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 
@@ -186,6 +184,7 @@ public class ReactedUsersListView extends FrameLayout {
                 return !customReactionsEmoji.isEmpty() && messageContainsEmojiButton != null ? messageContainsEmojiButton.getMeasuredHeight() + AndroidUtilities.dp(8) : 0;
             }
         };
+        loadingView.setColors(Theme.key_actionBarDefaultSubmenuBackground, Theme.key_listSelector, null);
 
         loadingView.setIsSingleCell(true);
         loadingView.setItemsCount(predictiveCount);
@@ -369,7 +368,7 @@ public class ReactedUsersListView extends FrameLayout {
 
     private final class ReactedUserHolderView extends FrameLayout {
         BackupImageView avatarView;
-        TextView titleView;
+        SimpleTextView titleView;
         BackupImageView reactView;
         AvatarDrawable avatarDrawable = new AvatarDrawable();
         View overlaySelectorView;
@@ -382,13 +381,14 @@ public class ReactedUsersListView extends FrameLayout {
             avatarView.setRoundRadius(AndroidUtilities.dp(32));
             addView(avatarView, LayoutHelper.createFrameRelatively(36, 36, Gravity.START | Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
 
-            titleView = new TextView(context);
-            titleView.setLines(1);
-            titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            titleView = new SimpleTextView(context);
+            titleView.setTextSize(16);
             titleView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
-            titleView.setEllipsize(TextUtils.TruncateAt.END);
+            titleView.setEllipsizeByGradient(true);
             titleView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
-            addView(titleView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 58, 0, 44, 0));
+            titleView.setWidthWrapContent(true);
+            titleView.setPadding(0, AndroidUtilities.dp(12), 0, AndroidUtilities.dp(12));
+            addView(titleView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 58, 0, 36 + 6, 0));
 
             reactView = new BackupImageView(context);
             addView(reactView, LayoutHelper.createFrameRelatively(24, 24, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 12, 0));

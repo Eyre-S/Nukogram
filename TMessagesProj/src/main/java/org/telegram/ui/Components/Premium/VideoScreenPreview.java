@@ -40,6 +40,7 @@ import org.telegram.ui.Components.voip.CellFlickerDrawable;
 import org.telegram.ui.PremiumPreviewFragment;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URLEncoder;
 
 public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, NotificationCenter.NotificationCenterDelegate {
@@ -67,12 +68,17 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
                     return;
                 }
 
-                MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-                retriever.setDataSource(ApplicationLoader.applicationContext, Uri.fromFile(file));
-                int width = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH));
-                int height = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT));
-                retriever.release();
-                aspectRatio = width / (float) height;
+                // start nuko: capability for an upgrade to SDK_33 (from SDK_31)
+                try (MediaMetadataRetriever retriever = new MediaMetadataRetriever()) {
+                    retriever.setDataSource(ApplicationLoader.applicationContext, Uri.fromFile(file));
+                    int width = Integer.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH));
+                    int height = Integer.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT));
+                    retriever.release();
+                    aspectRatio = width / (float)height;
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                // end nuko
             } else {
                 aspectRatio = 0.671f;
             }

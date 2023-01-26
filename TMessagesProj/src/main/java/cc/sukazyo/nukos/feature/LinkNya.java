@@ -11,6 +11,10 @@ import java.util.regex.Pattern;
 public class LinkNya {
 	
 	public static final Pattern REGEX_NYA_WEB_PATH = Pattern.compile("^(?:nya|meow|miao)[^/]*?/?$");
+	public static final String[] LIST_NYA_TG_LINK = {
+			"tg:meow", "tg:nya", "tg:miao",
+			"tg://meow", "tg://nya", "tg://miao"
+	};
 	
 	@SuppressWarnings("unused") // unused feature https://nuko.sukazyo.cc/nya with same as tg://nya
 	public static boolean isNyaPath (@NonNull String path) {
@@ -18,9 +22,10 @@ public class LinkNya {
 	}
 	
 	public static boolean isNyaTgLink (@NonNull String url) {
-		return url.startsWith("tg:meow") || url.startsWith("tg://meow") ||
-				url.startsWith("tg:nya") || url.startsWith("tg://nya") ||
-				url.startsWith("tg:miao") || url.startsWith("tg://miao");
+		for (String prefix : LIST_NYA_TG_LINK) {
+			if (url.startsWith(prefix)) return true;
+		}
+		return false;
 	}
 	
 	public static void nya () {

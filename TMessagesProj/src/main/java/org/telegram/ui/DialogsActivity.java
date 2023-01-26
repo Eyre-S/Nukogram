@@ -2368,10 +2368,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             } else {
                 statusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(null, AndroidUtilities.dp(26));
                 statusDrawable.center = true;
+                // nuko: make main title nukos
                 if (BuildVars.DEBUG_VERSION) {
-                    actionBar.setTitle(LocaleController.getString("AppNameBeta", R.string.AppNameBeta), statusDrawable);
+                    actionBar.setTitle(LocaleController.getString("NukoTitleNameBeta", R.string.NukoTitleNameBeta), statusDrawable);
                 } else {
-                    actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName), statusDrawable);
+                    actionBar.setTitle(LocaleController.getString("NukoTitleName", R.string.NukoTitleName), statusDrawable);
                 }
                 updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
             }

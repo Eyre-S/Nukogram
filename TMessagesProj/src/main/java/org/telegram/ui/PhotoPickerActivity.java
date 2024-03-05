@@ -196,9 +196,9 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     private PhotoPickerActivityDelegate delegate;
     private PhotoPickerActivitySearchDelegate searchDelegate;
 
-    private final String dialogBackgroundKey;
-    private final String textKey;
-    private final String selectorKey;
+    private final int dialogBackgroundKey;
+    private final int textKey;
+    private final int selectorKey;
 
     private PhotoViewer.PhotoViewerProvider provider = new PhotoViewer.EmptyPhotoViewerProvider() {
         @Override
@@ -237,7 +237,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     if (photoEntry.thumbPath != null) {
                         imageView.setImage(photoEntry.thumbPath, null, Theme.chat_attachEmptyDrawable);
                     } else if (photoEntry.path != null) {
-                        imageView.setOrientation(photoEntry.orientation, true);
+                        imageView.setOrientation(photoEntry.orientation, photoEntry.invert, true);
                         if (photoEntry.isVideo) {
                             imageView.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, Theme.chat_attachEmptyDrawable);
                         } else {
@@ -522,7 +522,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             menuItem.setSubMenuDelegate(new ActionBarMenuItem.ActionBarSubMenuItemDelegate() {
                 @Override
                 public void onShowSubMenu() {
-                    showAsListItem.setText(listSort ? LocaleController.getString("ShowAsGrid", R.string.ShowAsGrid) : LocaleController.getString("ShowAsList", R.string.ShowAsList));
+                    showAsListItem.setText(listSort ? LocaleController.getString(R.string.ShowAsGrid) : LocaleController.getString("ShowAsList", R.string.ShowAsList));
                     showAsListItem.setIcon(listSort ? R.drawable.msg_media : R.drawable.msg_list);
                 }
 
@@ -815,7 +815,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     showDialog(dialog);
                     TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     if (button != null) {
-                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+                        button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
                     }
                     return;
                 }

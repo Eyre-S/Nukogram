@@ -24,6 +24,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
@@ -62,7 +63,7 @@ public class TopicCreateFragment extends BaseFragment {
     private final static int EDIT_ID = 2;
     long chatId;
     long selectedEmojiDocumentId;
-    int topicId;
+    long topicId;
 
     TextCheckCell2 checkBoxCell;
     EditTextBoldCursor editTextBoldCursor;
@@ -78,10 +79,10 @@ public class TopicCreateFragment extends BaseFragment {
 
     int iconColor;
 
-    public static TopicCreateFragment create(long chatId, int topicId) {
+    public static TopicCreateFragment create(long chatId, long topicId) {
         Bundle bundle = new Bundle();
         bundle.putLong("chat_id", chatId);
-        bundle.putInt("topic_id", topicId);
+        bundle.putLong("topic_id", topicId);
         return new TopicCreateFragment(bundle);
     }
 
@@ -92,7 +93,7 @@ public class TopicCreateFragment extends BaseFragment {
     @Override
     public boolean onFragmentCreate() {
         chatId = arguments.getLong("chat_id");
-        topicId = arguments.getInt("topic_id", 0);
+        topicId = arguments.getLong("topic_id", 0);
         if (topicId != 0) {
             topicForEdit = getMessagesController().getTopicsController().findTopic(chatId, topicId);
             if (topicForEdit == null) {
@@ -442,7 +443,7 @@ public class TopicCreateFragment extends BaseFragment {
             selectAnimatedEmojiDialog.setClipChildren(false);
             emojiContainer.addView(selectAnimatedEmojiDialog, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 12, 12, 12, 12));
 
-            Drawable drawable = ForumUtilities.createTopicDrawable("", iconColor);
+            Drawable drawable = ForumUtilities.createTopicDrawable("", iconColor, false);
             CombinedDrawable topicCombinedDrawable = (CombinedDrawable) drawable;
             forumBubbleDrawable = (ForumBubbleDrawable) topicCombinedDrawable.getBackgroundDrawable();
 
@@ -485,7 +486,7 @@ public class TopicCreateFragment extends BaseFragment {
 
             TextInfoPrivacyCell infoCell = new TextInfoPrivacyCell(context);
             infoCell.setText(LocaleController.getString("EditTopicHideInfo", R.string.EditTopicHideInfo));
-            infoCell.setBackground(Theme.getThemedDrawable(getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow, getResourceProvider()));
+            infoCell.setBackground(Theme.getThemedDrawableByKey(getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow, getResourceProvider()));
             emojiContainer.addView(infoCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, 8 + 50, 0, 0));
         }
         linearLayout.addView(emojiContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -549,13 +550,13 @@ public class TopicCreateFragment extends BaseFragment {
         AndroidUtilities.updateViewVisibilityAnimated(backupImageView[1], false, 0.5f, true);
     }
 
-    int animationIndex = 0;
+    AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
 
     @Override
     public void onTransitionAnimationStart(boolean isOpen, boolean backward) {
         super.onTransitionAnimationStart(isOpen, backward);
         if (isOpen) {
-            animationIndex = getNotificationCenter().setAnimationInProgress(animationIndex, null);
+            notificationsLocker.lock();
         }
     }
 
@@ -566,7 +567,7 @@ public class TopicCreateFragment extends BaseFragment {
             removeSelfFromStack();
         }
 
-        getNotificationCenter().onAnimationFinish(animationIndex);
+        notificationsLocker.unlock();
         if (selectAnimatedEmojiDialog != null) {
             selectAnimatedEmojiDialog.setAnimationsEnabled(fragmentBeginToShow);
         }

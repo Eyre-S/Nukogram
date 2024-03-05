@@ -8,6 +8,8 @@
 
 package org.telegram.ui.ActionBar;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -30,6 +32,7 @@ import android.transition.TransitionManager;
 import android.transition.TransitionSet;
 import android.transition.TransitionValues;
 import android.transition.Visibility;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.Gravity;
@@ -57,6 +60,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -64,6 +68,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Adapters.FiltersView;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CloseProgressDrawable2;
 import org.telegram.ui.Components.CombinedDrawable;
@@ -72,6 +77,7 @@ import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
+import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -79,6 +85,17 @@ import java.util.HashMap;
 public class ActionBarMenuItem extends FrameLayout {
 
     private FrameLayout wrappedSearchFrameLayout;
+
+    public static void addText(ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout, String text, Theme.ResourcesProvider resourcesProvider) {
+        final TextView textView = new TextView(popupLayout.getContext());
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        textView.setPadding(AndroidUtilities.dp(13), AndroidUtilities.dp(8), AndroidUtilities.dp(13), AndroidUtilities.dp(8));
+        textView.setText(text);
+        textView.setTag(R.id.fit_width_tag, 1);
+        textView.setMaxWidth(AndroidUtilities.dp(200));
+        popupLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+    }
 
     public void setSearchPaddingStart(int padding) {
         searchItemPaddingStart = padding;
@@ -185,8 +202,9 @@ public class ActionBarMenuItem extends FrameLayout {
     private boolean showSubmenuByMove = true;
     private ArrayList<FiltersView.MediaFilterData> currentSearchFilters = new ArrayList<>();
     private int selectedFilterIndex = -1;
-    private int notificationIndex = -1;
+    private final AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
     private float dimMenu;
+    public int searchRightMargin;
 
     private float transitionOffset;
     private View showSubMenuFrom;
@@ -519,8 +537,24 @@ public class ActionBarMenuItem extends FrameLayout {
         return cell;
     }
 
+    public static View addGap(int id, ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout) {
+        View cell = new View(popupLayout.getContext());
+        cell.setTag(id);
+        cell.setTag(R.id.object_tag, 1);
+        cell.setTag(R.id.fit_width_tag, 1);
+        popupLayout.addView(cell);
+        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) cell.getLayoutParams();
+        if (LocaleController.isRTL) {
+            layoutParams.gravity = Gravity.RIGHT;
+        }
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = AndroidUtilities.dp(6);
+        cell.setLayoutParams(layoutParams);
+        return cell;
+    }
+
     public ActionBarMenuSubItem addSubItem(int id, int icon, Drawable iconDrawable, CharSequence text, boolean dismiss, boolean needCheck) {
-        return addSubItem(id, icon, iconDrawable, text, dismiss, needCheck, null);
+        return addSubItem(id, icon, iconDrawable, text, dismiss, needCheck, resourcesProvider);
     }
 
     public ActionBarMenuSubItem addSubItem(int id, int icon, Drawable iconDrawable, CharSequence text, boolean dismiss, boolean needCheck, Theme.ResourcesProvider resourcesProvider) {
@@ -809,7 +843,7 @@ public class ActionBarMenuItem extends FrameLayout {
     }
 
     public boolean isSearchFieldVisible() {
-        return searchContainer.getVisibility() == VISIBLE;
+        return searchContainer != null && searchContainer.getVisibility() == VISIBLE;
     }
 
     AnimatorSet searchContainerAnimator;
@@ -957,7 +991,7 @@ public class ActionBarMenuItem extends FrameLayout {
         boolean visible = !currentSearchFilters.isEmpty();
         ArrayList<FiltersView.MediaFilterData> localFilters = new ArrayList<>(currentSearchFilters);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && searchContainer.getTag() != null) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && searchContainer != null && searchContainer.getTag() != null) {
             TransitionSet transition = new TransitionSet();
             ChangeBounds changeBounds = new ChangeBounds();
             changeBounds.setDuration(150);
@@ -993,21 +1027,20 @@ public class ActionBarMenuItem extends FrameLayout {
                     }.setDuration(150)).addTransition(changeBounds);
             transition.setOrdering(TransitionSet.ORDERING_TOGETHER);
             transition.setInterpolator(CubicBezierInterpolator.EASE_OUT);
-            int selectedAccount = UserConfig.selectedAccount;
             transition.addListener(new Transition.TransitionListener() {
                 @Override
                 public void onTransitionStart(Transition transition) {
-                    notificationIndex = NotificationCenter.getInstance(selectedAccount).setAnimationInProgress(notificationIndex,null);
+                    notificationsLocker.lock();
                 }
 
                 @Override
                 public void onTransitionEnd(Transition transition) {
-                    NotificationCenter.getInstance(selectedAccount).onAnimationFinish(notificationIndex);
+                    notificationsLocker.unlock();
                 }
 
                 @Override
                 public void onTransitionCancel(Transition transition) {
-                    NotificationCenter.getInstance(selectedAccount).onAnimationFinish(notificationIndex);
+                    notificationsLocker.unlock();
                 }
 
                 @Override
@@ -1023,17 +1056,25 @@ public class ActionBarMenuItem extends FrameLayout {
             TransitionManager.beginDelayedTransition(searchFilterLayout, transition);
         }
 
-        for (int i = 0; i < searchFilterLayout.getChildCount(); i++) {
-            boolean removed = localFilters.remove(((SearchFilterView)searchFilterLayout.getChildAt(i)).getFilter());
-            if (!removed) {
-                searchFilterLayout.removeViewAt(i);
-                i--;
+        if (searchFilterLayout != null) {
+            for (int i = 0; i < searchFilterLayout.getChildCount(); i++) {
+                boolean removed = localFilters.remove(((SearchFilterView) searchFilterLayout.getChildAt(i)).getFilter());
+                if (!removed) {
+                    searchFilterLayout.removeViewAt(i);
+                    i--;
+                }
             }
         }
 
         for (int i = 0; i < localFilters.size(); i++) {
-            SearchFilterView searchFilterView = new SearchFilterView(getContext(), resourcesProvider);
-            searchFilterView.setData(localFilters.get(i));
+            FiltersView.MediaFilterData filter = localFilters.get(i);
+            SearchFilterView searchFilterView;
+            if (filter.reaction != null) {
+                searchFilterView = new ReactionFilterView(getContext(), resourcesProvider);
+            } else {
+                searchFilterView = new SearchFilterView(getContext(), resourcesProvider);
+            }
+            searchFilterView.setData(filter);
             searchFilterView.setOnClickListener(view -> {
                 int index = currentSearchFilters.indexOf(searchFilterView.getFilter());
                 if (selectedFilterIndex != index) {
@@ -1340,7 +1381,7 @@ public class ActionBarMenuItem extends FrameLayout {
                 wrappedSearchFrameLayout.addView(horizontalScrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 0, 0, 48, 0));
                 parentMenu.addView(wrappedSearchFrameLayout, 0, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, searchItemPaddingStart, 0, 0, 0));
             } else {
-                parentMenu.addView(searchContainer, 0, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, searchItemPaddingStart + 6, 0, 0, 0));
+                parentMenu.addView(searchContainer, 0, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, searchItemPaddingStart + 6, 0, searchRightMargin, 0));
             }
             searchContainer.setVisibility(GONE);
 
@@ -1836,6 +1877,17 @@ public class ActionBarMenuItem extends FrameLayout {
         }
     }
 
+    public boolean hasSubItem(int id) {
+        Item lazyItem = findLazyItem(id);
+        if (lazyItem != null) {
+            return true;
+        }
+        if (popupLayout == null) {
+            return false;
+        }
+        return popupLayout.findViewWithTag(id) != null;
+    }
+
     /**
      * Hides this menu item if no subitems are available
      */
@@ -1971,9 +2023,82 @@ public class ActionBarMenuItem extends FrameLayout {
         setTranslationX(0);
     }
 
-    private int getThemedColor(String key) {
-        Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-        return color != null ? color : Theme.getColor(key);
+    private int getThemedColor(int key) {
+        return Theme.getColor(key, resourcesProvider);
+    }
+
+    private static class ReactionFilterView extends SearchFilterView {
+
+        private ReactionsLayoutInBubble.ReactionButton reactionButton;
+
+        public ReactionFilterView(Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context, resourcesProvider);
+            removeAllViews();
+            setBackground(null);
+
+            setWillNotDraw(false);
+        }
+
+        public void setData(FiltersView.MediaFilterData data) {
+            TLRPC.TL_reactionCount reactionCount = new TLRPC.TL_reactionCount();
+            reactionCount.count = 1;
+            reactionCount.reaction = data.reaction.toTLReaction();
+
+            reactionButton = new ReactionsLayoutInBubble.ReactionButton(null, UserConfig.selectedAccount, this, reactionCount, false, true, resourcesProvider) {
+                @Override
+                protected void updateColors(float progress) {
+                    lastDrawnBackgroundColor = ColorUtils.blendARGB(fromBackgroundColor, Theme.getColor(Theme.key_chat_inReactionButtonBackground, resourcesProvider), progress);
+                    lastDrawnTagDotColor = ColorUtils.blendARGB(fromTagDotColor, 0x5affffff, progress);
+                }
+
+                @Override
+                protected int getCacheType() {
+                    return AnimatedEmojiDrawable.CACHE_TYPE_ALERT_EMOJI_STATUS;
+                }
+            };
+            reactionButton.isTag = true;
+            reactionButton.width = dp(44.33f);
+            reactionButton.height = dp(28);
+            reactionButton.choosen = true;
+            if (attached) {
+                reactionButton.attach();
+            }
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            setMeasuredDimension(dp(45 + 4), dp(32));
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            if (reactionButton != null) {
+                reactionButton.draw(canvas, (getWidth() - dp(4) - reactionButton.width) / 2f, (getHeight() - reactionButton.height) / 2f, 1f, 1f, false);
+            }
+        }
+
+        private boolean attached;
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            if (!attached) {
+                if (reactionButton != null) {
+                    reactionButton.attach();
+                }
+                attached = true;
+            }
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            super.onDetachedFromWindow();
+            if (attached) {
+                if (reactionButton != null) {
+                    reactionButton.detach();
+                }
+                attached = false;
+            }
+        }
     }
 
     private static class SearchFilterView extends FrameLayout {
@@ -1998,7 +2123,7 @@ public class ActionBarMenuItem extends FrameLayout {
             }
         };
 
-        private final Theme.ResourcesProvider resourcesProvider;
+        protected final Theme.ResourcesProvider resourcesProvider;
 
         public SearchFilterView(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
@@ -2045,7 +2170,7 @@ public class ActionBarMenuItem extends FrameLayout {
 
         public void setData(FiltersView.MediaFilterData data) {
             this.data = data;
-            titleView.setText(data.title);
+            titleView.setText(data.getTitle());
             thumbDrawable = Theme.createCircleDrawableWithIcon(AndroidUtilities.dp(32), data.iconResFilled);
             Theme.setCombinedDrawableColor(thumbDrawable, getThemedColor(Theme.key_avatar_backgroundBlue), false);
             Theme.setCombinedDrawableColor(thumbDrawable, getThemedColor(Theme.key_avatar_actionBarIconBlue), true);
@@ -2119,9 +2244,8 @@ public class ActionBarMenuItem extends FrameLayout {
             return data;
         }
 
-        private int getThemedColor(String key) {
-            Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-            return color != null ? color : Theme.getColor(key);
+        protected int getThemedColor(int key) {
+            return Theme.getColor(key, resourcesProvider);
         }
     }
 
@@ -2331,6 +2455,9 @@ public class ActionBarMenuItem extends FrameLayout {
     }
     public Item lazilyAddSubItem(int id, int icon, CharSequence text) {
         return lazilyAddSubItem(id, icon, null, text, true, false);
+    }
+    public Item lazilyAddSubItem(int id, Drawable iconDrawable, CharSequence text) {
+        return lazilyAddSubItem(id, 0, iconDrawable, text, true, false);
     }
     public Item lazilyAddSubItem(int id, int icon, Drawable iconDrawable, CharSequence text, boolean dismiss, boolean needCheck) {
         return putLazyItem(Item.asSubItem(id, icon, iconDrawable, text, dismiss, needCheck));

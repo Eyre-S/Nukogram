@@ -66,7 +66,9 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
 
     private void checkCreateReactionsLayout() {
         if (reactionsContainerLayout == null) {
-            reactionsContainerLayout = new ReactionsContainerLayout(parentFragment, getContext(), parentFragment.getCurrentAccount(), parentFragment.getResourceProvider()) {
+            final boolean tags = parentFragment.getUserConfig().getClientUserId() == parentFragment.getDialogId();
+
+            reactionsContainerLayout = new ReactionsContainerLayout(tags ? ReactionsContainerLayout.TYPE_TAGS : ReactionsContainerLayout.TYPE_DEFAULT, parentFragment, getContext(), parentFragment.getCurrentAccount(), parentFragment.getResourceProvider()) {
                 float enabledAlpha = 1f;
                 long lastUpdate;
 
@@ -110,7 +112,7 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
             reactionsContainerLayout.setDelegate(new ReactionsContainerLayout.ReactionsContainerDelegate() {
                 @Override
                 public void onReactionClicked(View view, ReactionsLayoutInBubble.VisibleReaction visibleReaction, boolean longpress, boolean addToRecent) {
-                    parentFragment.selectReaction(currentPrimaryObject, reactionsContainerLayout, view, 0, 0, visibleReaction, false, longpress, addToRecent);
+                    parentFragment.selectReaction(currentPrimaryObject, reactionsContainerLayout, view, 0, 0, visibleReaction, false, longpress, addToRecent, false);
                     AndroidUtilities.runOnUIThread(() -> {
                         if (reactionsContainerLayout != null) {
                             reactionsContainerLayout.dismissParent(true);
@@ -295,7 +297,13 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
     }
 
     private boolean isMessageTypeAllowed(MessageObject obj) {
-        return MessageObject.isPhoto(obj.messageOwner) && MessageObject.getMedia(obj.messageOwner).webpage == null || obj.getDocument() != null && (MessageObject.isVideoDocument(obj.getDocument()) || MessageObject.isGifDocument(obj.getDocument()));
+        return obj != null && !obj.needDrawBluredPreview() && (
+            MessageObject.isPhoto(obj.messageOwner) && MessageObject.getMedia(obj.messageOwner).webpage == null ||
+            obj.getDocument() != null && (
+                MessageObject.isVideoDocument(obj.getDocument()) ||
+                MessageObject.isGifDocument(obj.getDocument())
+            )
+        );
     }
 
     public void setSelectedMessages(List<MessageObject> messages) {
@@ -336,19 +344,21 @@ public class ChatSelectionReactionMenuOverlay extends FrameLayout {
 
     private void animateVisible(boolean visible) {
         if (visible) {
-            currentPrimaryObject = findPrimaryObject();
-            checkCreateReactionsLayout();
-            invalidatePosition(false);
-
             setVisibility(VISIBLE);
-            if (reactionsContainerLayout.isEnabled()) {
-                messageSet = true;
-                reactionsContainerLayout.setMessage(currentPrimaryObject, parentFragment.getCurrentChatInfo());
-                reactionsContainerLayout.startEnterAnimation(false);
-            } else {
-                messageSet = false;
-                reactionsContainerLayout.setTransitionProgress(1f);
-            }
+            post(() -> {
+                currentPrimaryObject = findPrimaryObject();
+                checkCreateReactionsLayout();
+                invalidatePosition(false);
+
+                if (reactionsContainerLayout.isEnabled()) {
+                    messageSet = true;
+                    reactionsContainerLayout.setMessage(currentPrimaryObject, parentFragment.getCurrentChatInfo());
+                    reactionsContainerLayout.startEnterAnimation(false);
+                } else {
+                    messageSet = false;
+                    reactionsContainerLayout.setTransitionProgress(1f);
+                }
+            });
         } else {
             messageSet = false;
             ValueAnimator animator = ValueAnimator.ofFloat(1, 0).setDuration(150);

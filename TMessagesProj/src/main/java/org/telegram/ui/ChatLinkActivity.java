@@ -55,6 +55,7 @@ import org.telegram.ui.Components.LoadingStickerDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class ChatLinkActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -390,6 +391,10 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                     long[] array = new long[]{getUserConfig().getClientUserId()};
                     args.putLongArray("result", array);
                     args.putInt("chatType", ChatObject.CHAT_TYPE_MEGAGROUP);
+                    if (currentChat != null) {
+                        String title = LocaleController.formatString("GroupCreateDiscussionDefaultName", R.string.GroupCreateDiscussionDefaultName, currentChat.title);
+                        args.putString("title", title);
+                    }
                     GroupCreateFinalActivity activity = new GroupCreateFinalActivity(args);
                     activity.setDelegate(new GroupCreateFinalActivity.GroupCreateFinalActivityDelegate() {
                         @Override
@@ -465,7 +470,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                     showDialog(dialog);
                     TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     if (button != null) {
-                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+                        button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
                     }
                 }
             }
@@ -536,7 +541,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
 
         frameLayout2.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 21 : 76), 11, (LocaleController.isRTL ? 76 : 21), 0));
         frameLayout2.addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 24, 57, 24, 9));
-        avatarDrawable.setInfo(chat);
+        avatarDrawable.setInfo(currentAccount, chat);
         imageView.setForUserOrChat(chat, avatarDrawable);
         builder.setPositiveButton(LocaleController.getString("DiscussionLinkGroup", R.string.DiscussionLinkGroup), (dialogInterface, i) -> {
             if (chatFull.hidden_prehistory) {
@@ -618,6 +623,11 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                 TLRPC.messages_Chats res = (TLRPC.messages_Chats) response;
                 getMessagesController().putChats(res.chats, false);
                 chats = res.chats;
+                Iterator<TLRPC.Chat> i = chats.iterator();
+                while (i.hasNext()) {
+                    if (ChatObject.isForum(i.next()))
+                        i.remove();
+                }
             }
             loadingChats = false;
             chatsLoaded = true;
@@ -871,7 +881,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                     break;
                 case 1:
                     view = new TextInfoPrivacyCell(mContext);
-                    view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    view.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     break;
                 case 2:
                     view = new ManageChatTextCell(mContext);
@@ -986,14 +996,14 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                     ManageChatTextCell actionCell = (ManageChatTextCell) holder.itemView;
                     if (isChannel) {
                         if (info.linked_chat_id != 0) {
-                            actionCell.setColors(Theme.key_windowBackgroundWhiteRedText5, Theme.key_windowBackgroundWhiteRedText5);
+                            actionCell.setColors(Theme.key_text_RedRegular, Theme.key_text_RedRegular);
                             actionCell.setText(LocaleController.getString("DiscussionUnlinkGroup", R.string.DiscussionUnlinkGroup), null, R.drawable.msg_remove, false);
                         } else {
                             actionCell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueButton);
                             actionCell.setText(LocaleController.getString("DiscussionCreateGroup", R.string.DiscussionCreateGroup), null, R.drawable.msg_groups, true);
                         }
                     } else {
-                        actionCell.setColors(Theme.key_windowBackgroundWhiteRedText5, Theme.key_windowBackgroundWhiteRedText5);
+                        actionCell.setColors(Theme.key_text_RedRegular, Theme.key_text_RedRegular);
                         actionCell.setText(LocaleController.getString("DiscussionUnlinkChannel", R.string.DiscussionUnlinkChannel), null, R.drawable.msg_remove, false);
                     }
                     break;

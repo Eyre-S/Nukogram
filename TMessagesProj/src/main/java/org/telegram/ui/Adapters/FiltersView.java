@@ -36,6 +36,7 @@ import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.text.SimpleDateFormat;
@@ -69,11 +70,11 @@ public class FiltersView extends RecyclerListView {
     public final static int FILTER_INDEX_VOICE = 4;
 
     public final static MediaFilterData[] filters = new MediaFilterData[]{
-            new MediaFilterData(R.drawable.search_media_filled, LocaleController.getString("SharedMediaTab2", R.string.SharedMediaTab2), new TLRPC.TL_inputMessagesFilterPhotoVideo(), FILTER_TYPE_MEDIA),
-            new MediaFilterData(R.drawable.search_links_filled, LocaleController.getString("SharedLinksTab2", R.string.SharedLinksTab2), new TLRPC.TL_inputMessagesFilterUrl(), FILTER_TYPE_LINKS),
-            new MediaFilterData(R.drawable.search_files_filled, LocaleController.getString("SharedFilesTab2", R.string.SharedFilesTab2), new TLRPC.TL_inputMessagesFilterDocument(), FILTER_TYPE_FILES),
-            new MediaFilterData(R.drawable.search_music_filled, LocaleController.getString("SharedMusicTab2", R.string.SharedMusicTab2), new TLRPC.TL_inputMessagesFilterMusic(), FILTER_TYPE_MUSIC),
-            new MediaFilterData(R.drawable.search_voice_filled, LocaleController.getString("SharedVoiceTab2", R.string.SharedVoiceTab2), new TLRPC.TL_inputMessagesFilterRoundVoice(), FILTER_TYPE_VOICE)
+            new MediaFilterData(R.drawable.search_media_filled, R.string.SharedMediaTab2, new TLRPC.TL_inputMessagesFilterPhotoVideo(), FILTER_TYPE_MEDIA),
+            new MediaFilterData(R.drawable.search_links_filled, R.string.SharedLinksTab2, new TLRPC.TL_inputMessagesFilterUrl(), FILTER_TYPE_LINKS),
+            new MediaFilterData(R.drawable.search_files_filled, R.string.SharedFilesTab2, new TLRPC.TL_inputMessagesFilterDocument(), FILTER_TYPE_FILES),
+            new MediaFilterData(R.drawable.search_music_filled, R.string.SharedMusicTab2, new TLRPC.TL_inputMessagesFilterMusic(), FILTER_TYPE_MUSIC),
+            new MediaFilterData(R.drawable.search_voice_filled, R.string.SharedVoiceTab2, new TLRPC.TL_inputMessagesFilterRoundVoice(), FILTER_TYPE_VOICE)
     };
 
     private ArrayList<MediaFilterData> usersFilters = new ArrayList<>();
@@ -259,7 +260,7 @@ public class FiltersView extends RecyclerListView {
             }
         }
         if (archive) {
-            FiltersView.MediaFilterData filterData = new FiltersView.MediaFilterData(R.drawable.chats_archive, LocaleController.getString("ArchiveSearchFilter", R.string.ArchiveSearchFilter), null, FiltersView.FILTER_TYPE_ARCHIVE);
+            FiltersView.MediaFilterData filterData = new FiltersView.MediaFilterData(R.drawable.chats_archive, R.string.ArchiveSearchFilter, null, FiltersView.FILTER_TYPE_ARCHIVE);
             usersFilters.add(filterData);
         }
         if (getAdapter() != null) {
@@ -769,9 +770,8 @@ public class FiltersView extends RecyclerListView {
             titleView.setText(data.title);
         }
 
-        private int getThemedColor(String key) {
-            Integer color = resourcesProvider != null ? resourcesProvider.getColor(key) : null;
-            return color != null ? color : Theme.getColor(key);
+        protected int getThemedColor(int key) {
+            return Theme.getColor(key, resourcesProvider);
         }
     }
 
@@ -787,19 +787,40 @@ public class FiltersView extends RecyclerListView {
 
     public static class MediaFilterData {
 
-        public final int iconResFilled;
-        public final String title;
-        public final int filterType;
-        public final TLRPC.MessagesFilter filter;
+        public ReactionsLayoutInBubble.VisibleReaction reaction;
+
+        public int iconResFilled;
+        public int titleResId;
+        private String title;
+        public int filterType;
+        public TLRPC.MessagesFilter filter;
         public TLObject chat;
         public DateData dateData;
         public boolean removable = true;
+
+        public MediaFilterData(ReactionsLayoutInBubble.VisibleReaction reaction) {
+            this.reaction = reaction;
+        }
 
         public MediaFilterData(int iconResFilled, String title, TLRPC.MessagesFilter filter, int filterType) {
             this.iconResFilled = iconResFilled;
             this.title = title;
             this.filter = filter;
             this.filterType = filterType;
+        }
+
+        public MediaFilterData(int iconResFilled, int titleResId, TLRPC.MessagesFilter filter, int filterType) {
+            this.iconResFilled = iconResFilled;
+            this.titleResId = titleResId;
+            this.filter = filter;
+            this.filterType = filterType;
+        }
+
+        public String getTitle() {
+            if (title != null) {
+                return title;
+            }
+            return LocaleController.getString(titleResId);
         }
 
         public void setUser(TLObject chat) {

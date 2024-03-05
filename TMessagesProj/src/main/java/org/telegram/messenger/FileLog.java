@@ -8,6 +8,8 @@
 
 package org.telegram.messenger;
 
+import android.content.Context;
+import android.content.res.ColorStateList;
 import android.util.Log;
 
 import com.google.gson.ExclusionStrategy;
@@ -19,6 +21,7 @@ import org.telegram.messenger.time.FastDateFormat;
 import org.telegram.messenger.video.MediaCodecVideoConvertor;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
@@ -32,6 +35,7 @@ import java.util.Locale;
 public class FileLog {
     private OutputStreamWriter streamWriter = null;
     private FastDateFormat dateFormat = null;
+    private FastDateFormat fileDateFormat = null;
     private DispatchQueue logQueue = null;
 
     private File currentFile = null;
@@ -71,8 +75,8 @@ public class FileLog {
     private static Gson gson;
     private static HashSet<String> excludeRequests;
 
-    public static void dumpResponseAndRequest(TLObject request, TLObject response, TLRPC.TL_error error, long requestMsgId, long startRequestTimeInMillis, int requestToken) {
-        if (!BuildVars.DEBUG_PRIVATE_VERSION || !BuildVars.LOGS_ENABLED || request == null || SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW) {
+    public static void dumpResponseAndRequest(int account, TLObject request, TLObject response, TLRPC.TL_error error, long requestMsgId, long startRequestTimeInMillis, int requestToken) {
+        if (!BuildVars.DEBUG_PRIVATE_VERSION || !BuildVars.LOGS_ENABLED || request == null) {
             return;
         }
         String requestSimpleName = request.getClass().getSimpleName();
@@ -93,7 +97,7 @@ public class FileLog {
             long time = System.currentTimeMillis();
             FileLog.getInstance().logQueue.postRunnable(() -> {
                 try {
-                    String metadata = "requestMsgId=" + requestMsgId + " requestingTime=" + (System.currentTimeMillis() - startRequestTimeInMillis) +  " request_token=" + requestToken;
+                    String metadata = "requestMsgId=" + requestMsgId + " requestingTime=" + (System.currentTimeMillis() - startRequestTimeInMillis) +  " request_token=" + requestToken + " account=" + account;
                     FileLog.getInstance().tlStreamWriter.write(getInstance().dateFormat.format(time) + " " + metadata);
                     FileLog.getInstance().tlStreamWriter.write("\n");
                     FileLog.getInstance().tlStreamWriter.write(req);
@@ -122,7 +126,7 @@ public class FileLog {
         try {
             checkGson();
             getInstance().dateFormat.format(System.currentTimeMillis());
-            String messageStr = "receive message -> " + message.getClass().getSimpleName() + " : " + gson.toJson(message);
+            String messageStr = "receive message -> " + message.getClass().getSimpleName() + " : " + (gsonDisabled ? message : gson.toJson(message));
             String res = "null";
             long time = System.currentTimeMillis();
             FileLog.getInstance().logQueue.postRunnable(() -> {
@@ -146,6 +150,11 @@ public class FileLog {
         }
     }
 
+    private static boolean gsonDisabled;
+    public static void disableGson(boolean disable) {
+        gsonDisabled = disable;
+    }
+
     private static void checkGson() {
         if (gson == null) {
             HashSet<String> privateFields = new HashSet<>();
@@ -160,13 +169,15 @@ public class FileLog {
 
             privateFields.add("networkType");
             privateFields.add("disableFree");
+            privateFields.add("mContext");
+            privateFields.add("priority");
 
             //exclude file loading
             excludeRequests = new HashSet<>();
             excludeRequests.add("TL_upload_getFile");
             excludeRequests.add("TL_upload_getWebFile");
 
-            gson = new GsonBuilder().addSerializationExclusionStrategy(new ExclusionStrategy() {
+            ExclusionStrategy strategy = new ExclusionStrategy() {
 
                 @Override
                 public boolean shouldSkipField(FieldAttributes f) {
@@ -178,9 +189,10 @@ public class FileLog {
 
                 @Override
                 public boolean shouldSkipClass(Class<?> clazz) {
-                    return false;
+                    return clazz.isInstance(DispatchQueue.class) || clazz.isInstance(AnimatedFileDrawable.class) || clazz.isInstance(ColorStateList.class) || clazz.isInstance(Context.class);
                 }
-            }).create();
+            };
+            gson = new GsonBuilder().addSerializationExclusionStrategy(strategy).registerTypeAdapterFactory(RuntimeClassNameTypeAdapterFactory.of(TLObject.class, "type_", strategy)).create();
         }
     }
 
@@ -190,8 +202,9 @@ public class FileLog {
         if (initied) {
             return;
         }
-        dateFormat = FastDateFormat.getInstance("dd_MM_yyyy_HH_mm_ss", Locale.US);
-        String date = dateFormat.format(System.currentTimeMillis());
+        dateFormat = FastDateFormat.getInstance("dd_MM_yyyy_HH_mm_ss.SSS", Locale.US);
+        fileDateFormat = FastDateFormat.getInstance("dd_MM_yyyy_HH_mm_ss", Locale.US);
+        String date = fileDateFormat.format(System.currentTimeMillis());
         try {
             File dir = AndroidUtilities.getLogsDir();
             if (dir == null) {
@@ -233,7 +246,7 @@ public class FileLog {
             if (dir == null) {
                 return "";
             }
-            getInstance().networkFile = new File(dir, getInstance().dateFormat.format(System.currentTimeMillis()) + "_net.txt");
+            getInstance().networkFile = new File(dir, getInstance().fileDateFormat.format(System.currentTimeMillis()) + "_net.txt");
             return getInstance().networkFile.getAbsolutePath();
         } catch (Throwable e) {
             e.printStackTrace();

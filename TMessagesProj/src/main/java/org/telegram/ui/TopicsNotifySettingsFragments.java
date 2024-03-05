@@ -86,7 +86,7 @@ public class TopicsNotifySettingsFragments extends BaseFragment {
                     topicsFragment.setOnTopicSelectedListener((topic) -> {
                         Bundle bundle2 = new Bundle();
                         bundle2.putLong("dialog_id", dialogId);
-                        bundle2.putInt("topic_id", topic.id);
+                        bundle2.putLong("topic_id", topic.id);
                         bundle2.putBoolean("exception", true);
                         ProfileNotificationsActivity fragment = new ProfileNotificationsActivity(bundle2);
                         fragment.setDelegate(exception -> {
@@ -102,7 +102,7 @@ public class TopicsNotifySettingsFragments extends BaseFragment {
                     TLRPC.TL_forumTopic topic = (TLRPC.TL_forumTopic) items.get(position).topic;
                     Bundle bundle = new Bundle();
                     bundle.putLong("dialog_id", dialogId);
-                    bundle.putInt("topic_id", topic.id);
+                    bundle.putLong("topic_id", topic.id);
                     bundle.putBoolean("exception", false);
                     ProfileNotificationsActivity topicsFragment = new ProfileNotificationsActivity(bundle);
                     topicsFragment.setDelegate(new ProfileNotificationsActivity.ProfileNotificationsActivityDelegate() {
@@ -142,7 +142,7 @@ public class TopicsNotifySettingsFragments extends BaseFragment {
                     showDialog(alertDialog);
                     TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     if (button != null) {
-                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+                        button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
                     }
                 }
             }
@@ -229,7 +229,7 @@ public class TopicsNotifySettingsFragments extends BaseFragment {
                 case VIEW_TYPE_DELETE_ALL:
                     textCell = new TextCell(parent.getContext());
                     textCell.setText(LocaleController.getString("NotificationsDeleteAllException", R.string.NotificationsDeleteAllException), false);
-                    textCell.setColors(null, Theme.key_windowBackgroundWhiteRedText5);
+                    textCell.setColors(-1, Theme.key_text_RedRegular);
                     view = textCell;
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;

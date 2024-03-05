@@ -394,6 +394,23 @@ public class VoIPHelper {
 		return false;
 	}
 
+	public static void sendCallRating(final long callID, final long accessHash, final int account, int rating) {
+		final int currentAccount = UserConfig.selectedAccount;
+		final TLRPC.TL_phone_setCallRating req = new TLRPC.TL_phone_setCallRating();
+		req.rating = rating;
+		req.comment = "";
+		req.peer = new TLRPC.TL_inputPhoneCall();
+		req.peer.access_hash = accessHash;
+		req.peer.id = callID;
+		req.user_initiative = false;
+		ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {
+			if (response instanceof TLRPC.TL_updates) {
+				TLRPC.TL_updates updates = (TLRPC.TL_updates) response;
+				MessagesController.getInstance(currentAccount).processUpdates(updates, false);
+			}
+		});
+	}
+
 	public static void showRateAlert(Context context, TLRPC.TL_messageActionPhoneCall call) {
 		SharedPreferences prefs = MessagesController.getNotificationsSettings(UserConfig.selectedAccount); // always called from chat UI
 		Set<String> hashes = prefs.getStringSet("calls_access_hashes", (Set<String>) Collections.EMPTY_SET);
@@ -491,7 +508,7 @@ public class VoIPHelper {
 		commentBox.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
 		commentBox.setHintTextColor(Theme.getColor(Theme.key_dialogTextHint));
 		commentBox.setBackground(null);
-		commentBox.setLineColors(Theme.getColor(Theme.key_dialogInputField), Theme.getColor(Theme.key_dialogInputFieldActivated), Theme.getColor(Theme.key_dialogTextRed));
+		commentBox.setLineColors(Theme.getColor(Theme.key_dialogInputField), Theme.getColor(Theme.key_dialogInputFieldActivated), Theme.getColor(Theme.key_text_RedBold));
 		commentBox.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4));
 		commentBox.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
 		commentBox.setVisibility(View.GONE);
@@ -589,7 +606,7 @@ public class VoIPHelper {
 					}
 					if (includeLogs[0] && log.exists() && req.rating < 4) {
 						AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
-						SendMessagesHelper.prepareSendingDocument(accountInstance, log.getAbsolutePath(), log.getAbsolutePath(), null, TextUtils.join(" ", problemTags), "text/plain", VOIP_SUPPORT_ID, null, null, null, null, true, 0);
+						SendMessagesHelper.prepareSendingDocument(accountInstance, log.getAbsolutePath(), log.getAbsolutePath(), null, TextUtils.join(" ", problemTags), "text/plain", VOIP_SUPPORT_ID, null, null, null, null, null, true, 0, null);
 						Toast.makeText(context, LocaleController.getString("CallReportSent", R.string.CallReportSent), Toast.LENGTH_LONG).show();
 					}
 				});

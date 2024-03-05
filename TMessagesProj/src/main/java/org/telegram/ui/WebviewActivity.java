@@ -136,6 +136,7 @@ public class WebviewActivity extends BaseFragment {
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
+        AndroidUtilities.checkAndroidTheme(getContext(), false);
         AndroidUtilities.cancelRunOnUIThread(typingRunnable);
         webView.setLayerType(View.LAYER_TYPE_NONE, null);
         typingRunnable = null;
@@ -192,6 +193,7 @@ public class WebviewActivity extends BaseFragment {
         } else if (type == TYPE_STAT) {
             actionBar.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
             actionBar.setItemsColor(Theme.getColor(Theme.key_player_actionBarItems), false);
+            actionBar.setItemsColor(Theme.getColor(Theme.key_player_actionBarItems), true);
             actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_player_actionBarSelector), false);
             actionBar.setTitleColor(Theme.getColor(Theme.key_player_actionBarTitle));
             actionBar.setSubtitleColor(Theme.getColor(Theme.key_player_actionBarSubtitle));
@@ -207,6 +209,7 @@ public class WebviewActivity extends BaseFragment {
             progressItem.setEnabled(false);
         }
 
+        AndroidUtilities.checkAndroidTheme(context, true);
         webView = new WebView(context);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
@@ -215,6 +218,10 @@ public class WebviewActivity extends BaseFragment {
         FrameLayout frameLayout = (FrameLayout) fragmentView;
         if (Build.VERSION.SDK_INT >= 19) {
             webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        }
+
+        if (Build.VERSION.SDK_INT >= 17) {
+            webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
         }
 
         if (Build.VERSION.SDK_INT >= 21) {

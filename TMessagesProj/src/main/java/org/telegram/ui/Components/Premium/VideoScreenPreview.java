@@ -113,14 +113,14 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
 
     private TLRPC.Document document;
 
-    public VideoScreenPreview(Context context, SvgHelper.SvgDrawable svgDrawable, int currentAccount, int type) {
+    public VideoScreenPreview(Context context, SvgHelper.SvgDrawable svgDrawable, int currentAccount, int type, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.currentAccount = currentAccount;
         this.type = type;
         this.svgIcon = svgDrawable;
 
         phoneFrame1.setColor(Color.BLACK);
-        phoneFrame2.setColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_premiumGradient2), Color.BLACK, 0.5f));
+        phoneFrame2.setColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_premiumGradient2, resourcesProvider), Color.BLACK, 0.5f));
         imageReceiver.setLayerNum(Integer.MAX_VALUE);
         setVideo();
 
@@ -132,12 +132,14 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
                 type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS ||
                 type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS ||
                 type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI ||
-                type == PremiumPreviewFragment.PREMIUM_FEATURE_REACTIONS) {
+                type == PremiumPreviewFragment.PREMIUM_FEATURE_REACTIONS ||
+                type == PremiumPreviewFragment.PREMIUM_FEATURE_SAVED_TAGS
+        ) {
             starDrawable = new StarParticlesView.Drawable(40);
             starDrawable.speedScale = 3;
             starDrawable.type = type;
 
-            if (type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS) {
+            if (type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS || type == PremiumPreviewFragment.PREMIUM_FEATURE_SAVED_TAGS) {
                 starDrawable.size1 = 14;
                 starDrawable.size2 = 18;
                 starDrawable.size3 = 18;
@@ -148,6 +150,7 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
             }
             starDrawable.k1 = starDrawable.k2 = starDrawable.k3 = 0.98f;
             starDrawable.speedScale = 4;
+            starDrawable.resourcesProvider = resourcesProvider;
             starDrawable.colorKey = Theme.key_premiumStartSmallStarsColor2;
             starDrawable.init();
         } else if (type == PremiumPreviewFragment.PREMIUM_FEATURE_DOWNLOAD_SPEED) {
@@ -164,6 +167,7 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
                 particlesCount = 400;
             }
             starDrawable = new StarParticlesView.Drawable(particlesCount);
+            starDrawable.resourcesProvider = resourcesProvider;
             starDrawable.colorKey = Theme.key_premiumStartSmallStarsColor2;
             starDrawable.size1 = 8;
             starDrawable.size1 = 6;
@@ -324,6 +328,7 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
                         type == PremiumPreviewFragment.PREMIUM_FEATURE_ADVANCED_CHAT_MANAGEMENT ||
                         type == PremiumPreviewFragment.PREMIUM_FEATURE_ADS ||
                         type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_AVATARS ||
+                        type == PremiumPreviewFragment.PREMIUM_FEATURE_SAVED_TAGS ||
                         type == PremiumPreviewFragment.PREMIUM_FEATURE_ANIMATED_EMOJI ||
                         type == PremiumPreviewFragment.PREMIUM_FEATURE_REACTIONS) {
                     starDrawable.rect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
@@ -507,6 +512,7 @@ public class VideoScreenPreview extends FrameLayout implements PagerHeaderView, 
             helloParticlesDrawable.recycle();
             helloParticlesDrawable = null;
         }
+        stopVideoPlayer();
     }
 
     @Override

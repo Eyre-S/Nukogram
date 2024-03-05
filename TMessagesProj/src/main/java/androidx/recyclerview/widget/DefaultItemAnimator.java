@@ -236,7 +236,11 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
             .setInterpolator(getRemoveInterpolator())
             .alpha(0)
             .scaleX(1f - animateByScale(view))
-            .scaleY(1f - animateByScale(view))
+            .scaleY(1f - animateByScale(view));
+        if (Build.VERSION.SDK_INT >= 19) {
+            animation.setUpdateListener(animation1 -> onRemoveAnimationUpdate(holder));
+        }
+        animation
             .setListener(
                 new AnimatorListenerAdapter() {
                     @Override
@@ -284,7 +288,11 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
             .scaleY(1f)
             .setDuration(getAddDuration())
             .setStartDelay(getAddDelay())
-            .setInterpolator(getAddInterpolator())
+            .setInterpolator(getAddInterpolator());
+        if (Build.VERSION.SDK_INT >= 19) {
+            animation.setUpdateListener(animation1 -> onAddAnimationUpdate(holder));
+        }
+        animation
             .setListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationStart(Animator animator) {
@@ -339,6 +347,14 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
     }
 
     protected void onChangeAnimationUpdate(RecyclerView.ViewHolder holder) {
+
+    }
+
+    protected void onAddAnimationUpdate(RecyclerView.ViewHolder holder) {
+
+    }
+
+    protected void onRemoveAnimationUpdate(RecyclerView.ViewHolder holder) {
 
     }
 
@@ -452,7 +468,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         return true;
     }
 
-    void animateChangeImpl(final ChangeInfo changeInfo) {
+    public void animateChangeImpl(final ChangeInfo changeInfo) {
         final RecyclerView.ViewHolder holder = changeInfo.oldHolder;
         final View view = holder == null ? null : holder.itemView;
         final RecyclerView.ViewHolder newHolder = changeInfo.newHolder;

@@ -77,12 +77,9 @@ public class PushListenerController {
                         req.events.add(event);
 
                         sendStat = false;
-                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                            if (error != null) {
-                                SharedConfig.pushStatSent = true;
-                                SharedConfig.saveConfig();
-                            }
-                        }));
+                        SharedConfig.pushStatSent = true;
+                        SharedConfig.saveConfig();
+                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
                     }
                     AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).registerForPush(pushType, token));
                 }
@@ -152,6 +149,10 @@ public class PushListenerController {
                     buffer.readBytes(strBytes, true);
                     jsonString = new String(strBytes);
                     JSONObject json = new JSONObject(jsonString);
+
+                    if (ApplicationLoader.applicationLoaderInstance != null && ApplicationLoader.applicationLoaderInstance.consumePush(currentAccount, json)) {
+                        return;
+                    }
 
                     if (json.has("loc_key")) {
                         loc_key = json.getString("loc_key");
@@ -289,7 +290,7 @@ public class PushListenerController {
                     if (custom.has("topic_id")) {
                         topicId = custom.getInt("topic_id");
                     }
-                    FileLog.d( "recived push notification chatId " + chat_id + " custom topicId " + topicId);
+                    FileLog.d( "recived push notification {"+ loc_key+ "} chatId " + chat_id + " custom topicId " + topicId);
                     if (custom.has("encryption_id")) {
                         dialogId = DialogObject.makeEncryptedDialogId(custom.getInt("encryption_id"));
                     }
@@ -328,6 +329,12 @@ public class PushListenerController {
                                 updates.add(update);
                             }
                             MessagesController.getInstance(accountFinal).processUpdateArray(updates, null, null, false, 0);
+                        } else if ("READ_STORIES".equals(loc_key)) {
+                            int maxId = custom.getInt("max_id");
+                            NotificationsController.getInstance(currentAccount).processReadStories(dialogId, maxId);
+                        } else if ("STORY_DELETED".equals(loc_key)) {
+                            int storyId = custom.getInt("story_id");
+                            NotificationsController.getInstance(currentAccount).processDeleteStory(dialogId, storyId);
                         } else if ("MESSAGE_DELETED".equals(loc_key)) {
                             String messages = custom.getString("messages");
                             String[] messagesArgs = messages.split(",");
@@ -396,6 +403,14 @@ public class PushListenerController {
                                 processNotification = true;
                             }
 
+                            int story_id = -1;
+                            if (loc_key.equals("STORY_NOTEXT") || loc_key.equals("STORY_HIDDEN_AUTHOR")) {
+                                if (custom.has("story_id")) {
+                                    story_id = custom.getInt("story_id");
+                                }
+                                processNotification = story_id >= 0;
+                            }
+
                             if (processNotification) {
                                 long chat_from_id = custom.optLong("chat_from_id", 0);
                                 long chat_from_broadcast_id = custom.optLong("chat_from_broadcast_id", 0);
@@ -417,14 +432,14 @@ public class PushListenerController {
                                 }
                                 String messageText = null;
                                 String message1 = null;
-                                String name = args[0];
+                                String name = args == null || args.length <= 0 ? null : args[0];
                                 String userName = null;
                                 boolean localMessage = false;
                                 boolean supergroup = false;
                                 boolean pinned = false;
                                 boolean channel = false;
                                 boolean edited = custom.has("edit_date");
-                                if (loc_key.startsWith("CHAT_")) {
+                                if (loc_key.startsWith("CHAT_") && args != null && args.length > 0) {
                                     if (UserObject.isReplyUser(dialogId)) {
                                         name += " @ " + args[1];
                                     } else {
@@ -439,13 +454,33 @@ public class PushListenerController {
                                     channel = true;
                                 }
 
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d(tag + " received message notification " + loc_key + " for dialogId = " + dialogId + " mid = " + msg_id);
-                                }
+
                                 if (loc_key.startsWith("REACT_") || loc_key.startsWith("CHAT_REACT_")) {
                                     messageText = getReactedText(loc_key, args);
                                 } else {
                                     switch (loc_key) {
+                                        case "STORY_NOTEXT": {
+                                            messageText = LocaleController.getString("StoryNotificationSingle");
+                                            message1 = null;
+                                            msg_id = story_id;
+                                            break;
+                                        }
+                                        case "STORY_HIDDEN_AUTHOR": {
+                                            messageText = LocaleController.formatPluralString("StoryNotificationHidden", 1);
+                                            message1 = null;
+                                            msg_id = story_id;
+                                            break;
+                                        }
+                                        case "MESSAGE_SAME_WALLPAPER": {
+                                            messageText = LocaleController.formatString("ActionSetSameWallpaperForThisChat", R.string.ActionSetSameWallpaperForThisChat, args[0]);
+                                            message1 = LocaleController.getString("WallpaperSameNotification", R.string.WallpaperSameNotification);
+                                            break;
+                                        }
+                                        case "MESSAGE_WALLPAPER": {
+                                            messageText = LocaleController.formatString("ActionSetWallpaperForThisChat", R.string.ActionSetWallpaperForThisChat, args[0]);
+                                            message1 = LocaleController.getString("WallpaperNotification", R.string.WallpaperNotification);
+                                            break;
+                                        }
                                         case "MESSAGE_RECURRING_PAY": {
                                             messageText = LocaleController.formatString("NotificationMessageRecurringPay", R.string.NotificationMessageRecurringPay, args[0], args[1]);
                                             message1 = LocaleController.getString("PaymentInvoice", R.string.PaymentInvoice);
@@ -460,6 +495,16 @@ public class PushListenerController {
                                         case "MESSAGE_NOTEXT": {
                                             messageText = LocaleController.formatString("NotificationMessageNoText", R.string.NotificationMessageNoText, args[0]);
                                             message1 = LocaleController.getString("Message", R.string.Message);
+                                            break;
+                                        }
+                                        case "MESSAGE_STORY": {
+                                            messageText = LocaleController.formatString("NotificationStory", R.string.NotificationStory, args[0]);
+                                            message1 = LocaleController.getString("Story", R.string.Story);
+                                            break;
+                                        }
+                                        case "MESSAGE_STORY_MENTION": {
+                                            messageText = LocaleController.getString("StoryNotificationMention", R.string.StoryNotificationMention);
+                                            message1 = null;
                                             break;
                                         }
                                         case "MESSAGE_PHOTO": {
@@ -581,14 +626,34 @@ public class PushListenerController {
                                             localMessage = true;
                                             break;
                                         }
+                                        case "MESSAGE_GIFTCODE": {
+                                            messageText = LocaleController.formatString("NotificationMessageGiftCode", R.string.NotificationMessageGiftCode, args[0], LocaleController.formatPluralString("Months", Utilities.parseInt(args[1])));
+                                            localMessage = true;
+                                            break;
+                                        }
+                                        case "MESSAGE_GIVEAWAY": {
+                                            messageText = LocaleController.formatString("NotificationMessageGiveaway", R.string.NotificationMessageGiveaway, args[0], args[1], args[2]);
+                                            localMessage = true;
+                                            break;
+                                        }
                                         case "MESSAGES": {
                                             messageText = LocaleController.formatString("NotificationMessageAlbum", R.string.NotificationMessageAlbum, args[0]);
                                             localMessage = true;
                                             break;
                                         }
+                                        case "CHANNEL_MESSAGE_GIVEAWAY": {
+                                            messageText = LocaleController.formatString("NotificationMessageChannelGiveaway", R.string.NotificationMessageChannelGiveaway, args[0], args[1], args[2]);
+                                            message1 = LocaleController.getString("BoostingGiveaway", R.string.BoostingGiveaway);
+                                            break;
+                                        }
                                         case "CHANNEL_MESSAGE_NOTEXT": {
                                             messageText = LocaleController.formatString("ChannelMessageNoText", R.string.ChannelMessageNoText, args[0]);
                                             message1 = LocaleController.getString("Message", R.string.Message);
+                                            break;
+                                        }
+                                        case "CHANNEL_MESSAGE_STORY": {
+                                            messageText = LocaleController.formatString("NotificationChannelStory", R.string.NotificationChannelStory, args[0]);
+                                            message1 = LocaleController.getString("Story", R.string.Story);
                                             break;
                                         }
                                         case "CHANNEL_MESSAGE_PHOTO": {
@@ -691,6 +756,11 @@ public class PushListenerController {
                                             localMessage = true;
                                             break;
                                         }
+                                        case "CHAT_MESSAGE_GIVEAWAY": {
+                                            messageText = LocaleController.formatString("NotificationMessageChatGiveaway", R.string.NotificationMessageChatGiveaway, args[0], args[1], args[2], args[3]);
+                                            message1 = LocaleController.getString("BoostingGiveaway", R.string.BoostingGiveaway);
+                                            break;
+                                        }
                                         case "CHAT_MESSAGE_TEXT": {
                                             messageText = LocaleController.formatString("NotificationMessageGroupText", R.string.NotificationMessageGroupText, args[0], args[1], args[2]);
                                             message1 = args[2];
@@ -699,6 +769,11 @@ public class PushListenerController {
                                         case "CHAT_MESSAGE_NOTEXT": {
                                             messageText = LocaleController.formatString("NotificationMessageGroupNoText", R.string.NotificationMessageGroupNoText, args[0], args[1]);
                                             message1 = LocaleController.getString("Message", R.string.Message);
+                                            break;
+                                        }
+                                        case "CHAT_MESSAGE_STORY": {
+                                            messageText = LocaleController.formatString("NotificationChatStory", R.string.NotificationChatStory, args[0]);
+                                            message1 = LocaleController.getString("Story", R.string.Story);
                                             break;
                                         }
                                         case "CHAT_MESSAGE_PHOTO": {
@@ -814,7 +889,7 @@ public class PushListenerController {
                                             break;
                                         }
                                         case "CHAT_DELETE_MEMBER": {
-                                            messageText = LocaleController.formatString("NotificationGroupKickMember", R.string.NotificationGroupKickMember, args[0], args[1]);
+                                            messageText = LocaleController.formatString("NotificationGroupKickMember", R.string.NotificationGroupKickMember, args[0], args[1], args.length <= 2 ? "" : args[2]);
                                             break;
                                         }
                                         case "CHAT_DELETE_YOU": {
@@ -987,6 +1062,10 @@ public class PushListenerController {
                                             }
                                             break;
                                         }
+                                        case "PINNED_GIVEAWAY": {
+                                            messageText = LocaleController.formatString("NotificationPinnedGiveaway", R.string.NotificationPinnedGiveaway, args[0]);
+                                            break;
+                                        }
                                         case "PINNED_QUIZ": {
                                             if (dialogId > 0) {
                                                 messageText = LocaleController.formatString("NotificationActionPinnedQuizUser", R.string.NotificationActionPinnedQuizUser, args[0], args[1]);
@@ -1113,6 +1192,10 @@ public class PushListenerController {
                                         }
                                     }
                                 }
+
+                                if (BuildVars.LOGS_ENABLED) {
+                                    FileLog.d(tag + " received message notification " + loc_key + " for dialogId = " + dialogId + " mid = " + msg_id);
+                                }
                                 if (messageText != null) {
                                     TLRPC.TL_message messageOwner = new TLRPC.TL_message();
                                     messageOwner.id = msg_id;
@@ -1160,6 +1243,9 @@ public class PushListenerController {
                                         messageObject.messageOwner.reply_to.reply_to_top_id = topicId;
                                     }
                                     messageObject.isReactionPush = loc_key.startsWith("REACT_") || loc_key.startsWith("CHAT_REACT_");
+                                    messageObject.isStoryPush = loc_key.equals("STORY_NOTEXT") || loc_key.equals("STORY_HIDDEN_AUTHOR");
+                                    messageObject.isStoryMentionPush = loc_key.equals("MESSAGE_STORY_MENTION");
+                                    messageObject.isStoryPushHidden = loc_key.equals("STORY_HIDDEN_AUTHOR");
                                     ArrayList<MessageObject> arrayList = new ArrayList<>();
                                     arrayList.add(messageObject);
                                     canRelease = false;
@@ -1248,6 +1334,12 @@ public class PushListenerController {
             }
             case "REACT_GIF": {
                 return LocaleController.formatString("PushReactGif", R.string.PushReactGif, args);
+            }
+            case "REACT_GIVEAWAY": {
+                return LocaleController.formatString("NotificationReactGiveaway", R.string.NotificationReactGiveaway, args);
+            }
+            case "CHAT_REACT_GIVEAWAY": {
+                return LocaleController.formatString("NotificationChatReactGiveaway", R.string.NotificationChatReactGiveaway, args);
             }
             case "CHAT_REACT_TEXT": {
                 return LocaleController.formatString("PushChatReactText", R.string.PushChatReactText, args);

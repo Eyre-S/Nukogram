@@ -32,10 +32,9 @@ public class BuildVars {
     // SafetyNet key for Google Identity SDK, set it to empty to disable
     // nuko: SafetyNet disabled
     public static String SAFETYNET_KEY = "";
-    // nuko: todo what is this?
-    public static String SMS_HASH = isStandaloneApp() ? "w0lkcmTZkKh" : (DEBUG_VERSION ? "O2P2z+/jBpJ" : "oLeq9AcOZkT");
-    // nuko: todo playstore app
+    // nuko: todo store apps
     public static String PLAYSTORE_APP_URL = "";
+    public static String HUAWEI_STORE_URL = "";
     public static String GOOGLE_AUTH_CLIENT_ID = "";
 
     // nuko: todo Huawei App Register
@@ -52,7 +51,7 @@ public class BuildVars {
     }
 
     public static boolean useInvoiceBilling() {
-        return DEBUG_VERSION || isStandaloneApp() || isBetaApp() || isHuaweiStoreApp() || hasDirectCurrency();
+        return BillingController.billingClientEmpty || DEBUG_VERSION || ApplicationLoader.isStandaloneBuild() || isBetaApp() || isHuaweiStoreApp() || hasDirectCurrency();
     }
 
     private static boolean hasDirectCurrency() {
@@ -71,15 +70,6 @@ public class BuildVars {
         return false;
     }
 
-    private static Boolean standaloneApp;
-    public static boolean isStandaloneApp() {
-        if (standaloneApp == null) {
-            // nuko: use BuildConfig package id
-            standaloneApp = ApplicationLoader.applicationContext != null && (BuildConfig.PACKAGE_ID+".web").equals(ApplicationLoader.applicationContext.getPackageName());
-        }
-        return standaloneApp;
-    }
-
     private static Boolean betaApp;
     public static boolean isBetaApp() {
         if (betaApp == null) {
@@ -92,5 +82,9 @@ public class BuildVars {
 
     public static boolean isHuaweiStoreApp() {
         return ApplicationLoader.isHuaweiStoreBuild();
+    }
+    
+    public static String getSmsHash() {
+        return ApplicationLoader.isStandaloneBuild() ? "w0lkcmTZkKh" : (DEBUG_VERSION ? "O2P2z+/jBpJ" : "oLeq9AcOZkT");
     }
 }

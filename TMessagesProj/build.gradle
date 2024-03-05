@@ -17,16 +17,18 @@ configurations.all {
 }
 
 dependencies {
-    implementation 'androidx.core:core:1.9.0'
+    implementation 'androidx.fragment:fragment:1.2.0'
+    implementation 'androidx.core:core:1.10.1'
     implementation 'androidx.palette:palette:1.0.0'
-    implementation 'androidx.exifinterface:exifinterface:1.3.3'
+    implementation 'androidx.exifinterface:exifinterface:1.3.6'
     implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'
     implementation 'androidx.multidex:multidex:2.0.1'
     implementation "androidx.sharetarget:sharetarget:1.2.0"
+    implementation 'androidx.interpolator:interpolator:1.0.0'
 
     compileOnly 'org.checkerframework:checker-qual:3.12.0'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.5'
-    implementation 'com.google.firebase:firebase-messaging:23.0.6'
+    implementation 'com.google.firebase:firebase-messaging:22.0.0'
     implementation 'com.google.firebase:firebase-config:21.1.1'
     implementation 'com.google.firebase:firebase-datatransport:18.1.5'
     implementation 'com.google.firebase:firebase-appindexing:20.0.0'
@@ -47,6 +49,16 @@ dependencies {
     
 //    implementation "com.microsoft.appcenter:appcenter-distribute:3.3.1"
 //    implementation "com.microsoft.appcenter:appcenter-crashes:3.3.1"
+
+    implementation 'com.google.android.gms:play-services-mlkit-subject-segmentation:16.0.0-beta1'
+    constraints {
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0") {
+            because("kotlin-stdlib-jdk7 is now a part of kotlin-stdlib")
+        }
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.0") {
+            because("kotlin-stdlib-jdk8 is now a part of kotlin-stdlib")
+        }
+    }
 
     //noinspection GradleDependency
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.6'
@@ -99,6 +111,7 @@ if (signing_keystore_pwd == null) print "[BUILD_CONFIG]Release signing config no
 def isWindows = String.valueOf(DefaultNativePlatform.currentOperatingSystem.toFamilyName() == OperatingSystemFamily.WINDOWS)
 
 android {
+    
     compileSdkVersion proj_compile_sdk
     buildToolsVersion proj_build_tool_version
     ndkVersion proj_ndk_version
@@ -151,54 +164,12 @@ android {
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
+//            buildConfigField "String", "BUILD_VERSION_STRING", "\"" + APP_VERSION_NAME + "\""
             buildConfigField "String", "APP_CENTER_HASH", "\"\""
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
         }
-
-//        HA_private {
-//            debuggable false
-//            jniDebuggable false
-//            signingConfig signingConfigs.debug
-//            applicationIdSuffix ".beta"
-//            minifyEnabled true
-//            multiDexEnabled true
-//            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
-//            ndk.debugSymbolLevel = 'FULL'
-//            buildConfigField "String", "APP_CENTER_HASH", "\"" + getProps("APP_CENTER_HASH_PRIVATE") + "\""
-//            buildConfigField "boolean", "DEBUG_VERSION", "true"
-//            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
-//            buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
-//        }
-//
-//        HA_public {
-//            debuggable false
-//            jniDebuggable false
-//            signingConfig signingConfigs.debug
-//            applicationIdSuffix ".beta"
-//            minifyEnabled true
-//            multiDexEnabled true
-//            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-//            ndk.debugSymbolLevel = 'FULL'
-//            buildConfigField "String", "APP_CENTER_HASH", "\"" + getProps("APP_CENTER_HASH_PUBLIC") + "\""
-//            buildConfigField "boolean", "DEBUG_VERSION", "true"
-//            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
-//            buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
-//        }
-
-//        standalone {
-//            debuggable false
-//            jniDebuggable false
-//            minifyEnabled true
-//            multiDexEnabled true
-//            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-//            ndk.debugSymbolLevel = 'FULL'
-//            buildConfigField "String", "APP_CENTER_HASH", "\"\""
-//            buildConfigField "boolean", "DEBUG_VERSION", "false"
-//            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
-//            buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
-//        }
 
         release {
             debuggable false
@@ -209,6 +180,7 @@ android {
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
+//            buildConfigField "String", "BUILD_VERSION_STRING", "\"" + APP_VERSION_NAME + "\""
             buildConfigField "String", "APP_CENTER_HASH", "\"\""
             buildConfigField "boolean", "DEBUG_VERSION", "false"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
@@ -219,17 +191,6 @@ android {
     sourceSets.debug {
         manifest.srcFile 'config/debug/AndroidManifest.xml'
     }
-    
-//    sourceSets.HA_private {
-//        manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest.xml'
-//    }
-//    sourceSets.HA_public {
-//        manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest.xml'
-//    }
-
-//    sourceSets.standalone {
-//        manifest.srcFile 'config/release/AndroidManifest.xml'
-//    }
     
     sourceSets.release {
         manifest.srcFile 'config/release/AndroidManifest.xml'
@@ -256,9 +217,6 @@ android {
             sourceSets.release {
                 manifest.srcFile 'config/release/AndroidManifest_SDK23.xml'
             }
-//            sourceSets.standalone {
-//                manifest.srcFile 'config/release/AndroidManifest_standalone.xml'
-//            }
             minSdkVersion 23
             ext {
                 abiVersionCode = 2
@@ -274,9 +232,6 @@ android {
             sourceSets.release {
                 manifest.srcFile 'config/release/AndroidManifest_SDK23.xml'
             }
-//            sourceSets.standalone {
-//                manifest.srcFile 'config/release/AndroidManifest_standalone.xml'
-//            }
             ext {
                 abiVersionCode = 9
             }

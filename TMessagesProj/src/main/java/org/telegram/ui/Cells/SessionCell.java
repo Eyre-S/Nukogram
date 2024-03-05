@@ -236,7 +236,7 @@ public class SessionCell extends FrameLayout {
             nameTextView.setText(session.domain);
             String name;
             if (user != null) {
-                avatarDrawable.setInfo(user);
+                avatarDrawable.setInfo(currentAccount, user);
                 name = UserObject.getFirstName(user);
                 imageView.setForUserOrChat(user, avatarDrawable);
             } else {
@@ -293,7 +293,7 @@ public class SessionCell extends FrameLayout {
         }
         String deviceModel = session.device_model.toLowerCase();
         int iconId;
-        String colorKey, colorKey2;
+        int colorKey, colorKey2;
         if (deviceModel.contains("safari")) {
             iconId = R.drawable.device_web_safari;
             colorKey = Theme.key_avatar_backgroundPink;

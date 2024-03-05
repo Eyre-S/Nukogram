@@ -115,6 +115,8 @@ public class AnimatedFloat {
         this.firstSet = false;
     }
 
+    // get() is not recommended to use (unless minimize System.currentTimeMillis() calls)
+    @Deprecated
     public float get() {
         return value;
     }
@@ -122,8 +124,19 @@ public class AnimatedFloat {
     // set() must be called inside onDraw/dispatchDraw
     // the main purpose of AnimatedFloat is to interpolate between abrupt changing states
 
+
     public float set(float mustBe) {
         return this.set(mustBe, false);
+    }
+
+    public float set(boolean mustBe) {
+        return this.set(mustBe ? 1 : 0, false);
+    }
+
+    // do set(value, true) when it's needed to skip animation
+
+    public float set(boolean mustBe, boolean force) {
+        return this.set(mustBe ? 1 : 0, force);
     }
 
     public float set(float mustBe, boolean force) {
@@ -161,6 +174,14 @@ public class AnimatedFloat {
         return value;
     }
 
+    public void setDuration(long duration) {
+        transitionDuration = duration;
+    }
+
+    public long getDuration() {
+        return transitionDuration;
+    }
+
     public boolean isInProgress() {
         return transition;
     }
@@ -179,6 +200,10 @@ public class AnimatedFloat {
         } else {
             return getTransitionProgress();
         }
+    }
+
+    public float getTargetValue() {
+        return targetValue;
     }
 
     public void setParent(View parent) {

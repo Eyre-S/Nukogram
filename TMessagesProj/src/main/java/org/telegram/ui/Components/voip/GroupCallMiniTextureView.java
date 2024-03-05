@@ -170,7 +170,7 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
         super(parentContainer.getContext());
         this.call = call;
         this.currentAccount = activity.getCurrentAccount();
-        pausedVideoDrawable = new CrossOutDrawable(parentContainer.getContext(), R.drawable.calls_video, null);
+        pausedVideoDrawable = new CrossOutDrawable(parentContainer.getContext(), R.drawable.calls_video, -1);
         pausedVideoDrawable.setCrossOut(true, false);
         pausedVideoDrawable.setOffsets(-AndroidUtilities.dp(4), AndroidUtilities.dp(6), AndroidUtilities.dp(6));
         pausedVideoDrawable.setStrokeWidth(AndroidUtilities.dpf2(3.4f));
@@ -1085,13 +1085,13 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
                 Object parentObject;
                 if (DialogObject.isUserDialog(peerId)) {
                     TLRPC.User currentUser = AccountInstance.getInstance(currentAccount).getMessagesController().getUser(peerId);
-                    noVideoStubLayout.avatarDrawable.setInfo(currentUser);
+                    noVideoStubLayout.avatarDrawable.setInfo(currentAccount, currentUser);
                     imageLocation = ImageLocation.getForUser(currentUser, ImageLocation.TYPE_BIG);
                     thumbLocation = ImageLocation.getForUser(currentUser, ImageLocation.TYPE_SMALL);
                     parentObject = currentUser;
                 } else {
                     TLRPC.Chat currentChat = AccountInstance.getInstance(UserConfig.selectedAccount).getMessagesController().getChat(-peerId);
-                    noVideoStubLayout.avatarDrawable.setInfo(currentChat);
+                    noVideoStubLayout.avatarDrawable.setInfo(currentAccount, currentChat);
                     imageLocation = ImageLocation.getForChat(currentChat, ImageLocation.TYPE_BIG);
                     thumbLocation = ImageLocation.getForChat(currentChat, ImageLocation.TYPE_SMALL);
                     parentObject = currentChat;

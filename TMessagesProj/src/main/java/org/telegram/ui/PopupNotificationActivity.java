@@ -162,7 +162,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         Theme.createDialogsResources(this);
         Theme.createChatResources(this, false);
 
-        AndroidUtilities.fillStatusBarHeight(this);
+        AndroidUtilities.fillStatusBarHeight(this, false);
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.appDidLogout);
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.updateInterfaces);
@@ -328,7 +328,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
 
             @Override
-            public void onTextChanged(CharSequence text, boolean big) {
+            public void onTextChanged(CharSequence text, boolean big, boolean fromDraft) {
 
             }
 
@@ -395,7 +395,12 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
 
             @Override
-            public void needStartRecordVideo(int state, boolean notify, int scheduleDate) {
+            public void needStartRecordVideo(int state, boolean notify, int scheduleDate, int ttl) {
+
+            }
+
+            @Override
+            public void toggleVideoRecordingPause() {
 
             }
 

@@ -381,9 +381,13 @@ void initWebRTC(JNIEnv *env) {
     rtc::InitializeSSL();
     webrtcLoaded = true;
 
+    DEBUG_REF("NativeInstanceClass");
     NativeInstanceClass = static_cast<jclass>(env->NewGlobalRef(env->FindClass("org/telegram/messenger/voip/NativeInstance")));
+    DEBUG_REF("TrafficStatsClass");
     TrafficStatsClass = static_cast<jclass>(env->NewGlobalRef(env->FindClass("org/telegram/messenger/voip/Instance$TrafficStats")));
+    DEBUG_REF("FingerprintClass");
     FingerprintClass = static_cast<jclass>(env->NewGlobalRef(env->FindClass("org/telegram/messenger/voip/Instance$Fingerprint")));
+    DEBUG_REF("FinalStateClass");
     FinalStateClass = static_cast<jclass>(env->NewGlobalRef(env->FindClass("org/telegram/messenger/voip/Instance$FinalState")));
     FinalStateInitMethod = env->GetMethodID(FinalStateClass, "<init>", "([BLjava/lang/String;Lorg/telegram/messenger/voip/Instance$TrafficStats;Z)V");
 }
@@ -920,7 +924,7 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_onStreamP
         return;
     }
     auto context = (AndroidContext *) instance->_platformContext.get();
-    std::shared_ptr<BroadcastPartTask> task;
+    std::shared_ptr<BroadcastPartTask> task = nullptr;
     auto q = (VideoChannelDescription::Quality) quality;
     if (videoChannel != 0) {
         for (auto videoTaskIter = context->videoStreamTasks.begin(); videoTaskIter != context->videoStreamTasks.end(); videoTaskIter++) {

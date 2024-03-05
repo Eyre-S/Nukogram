@@ -16,17 +16,25 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Rect;
+import android.graphics.Region;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.text.MeasuredText;
 import android.os.Build;
+import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
+
+import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DispatchQueue;
@@ -39,6 +47,7 @@ import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.BlurSettingsBottomSheet;
+import org.telegram.ui.ChatBackgroundDrawable;
 
 import java.util.ArrayList;
 
@@ -46,9 +55,13 @@ public class SizeNotifierFrameLayout extends FrameLayout {
 
     private Rect rect = new Rect();
     private Drawable backgroundDrawable;
+    private boolean backgroundMotion;
+    private Drawable oldBackgroundDrawable;
+    private boolean oldBackgroundMotion;
+
     protected int keyboardHeight;
     private int bottomClip;
-    private SizeNotifierFrameLayoutDelegate delegate;
+    protected SizeNotifierFrameLayoutDelegate delegate;
     private boolean occupyStatusBar = true;
     private WallpaperParallaxEffect parallaxEffect;
     private float translationX;
@@ -57,7 +70,6 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     private float parallaxScale = 1.0f;
     private int backgroundTranslationY;
     private boolean paused = true;
-    private Drawable oldBackgroundDrawable;
     private INavigationLayout parentLayout;
     public AdjustPanLayoutHelper adjustPanLayoutHelper;
     private int emojiHeight;
@@ -66,6 +78,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     private boolean skipBackgroundDrawing;
     SnowflakesEffect snowflakesEffect;
     protected View backgroundView;
+    boolean attached;
 
 
     //blur variables
@@ -98,11 +111,28 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     int times;
     int count2;
     int times2;
+    private float themeAnimationValue = 1f;
     //
 
     public void invalidateBlur() {
+        if (!SharedConfig.chatBlurEnabled()) {
+            return;
+        }
         invalidateBlur = true;
+        if (!blurIsRunning || blurGeneratingTuskIsRunning) {
+            return;
+        }
         invalidate();
+    }
+
+    public void invalidateBackground() {
+        if (backgroundView != null) {
+            backgroundView.invalidate();
+        }
+    }
+
+    public int getBottomPadding() {
+        return 0;
     }
 
 
@@ -119,8 +149,6 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         setWillNotDraw(false);
         parentLayout = layout;
         adjustPanLayoutHelper = createAdjustPanLayoutHelper();
-        addView(backgroundView = new BackgroundView(context), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        checkLayerType();
     }
 
     private class BackgroundView extends View {
@@ -134,17 +162,25 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                 return;
             }
             Drawable newDrawable = getNewDrawable();
+            boolean newMotion = getNewDrawableMotion();
             if (newDrawable != backgroundDrawable && newDrawable != null) {
                 if (Theme.isAnimatingColor()) {
                     oldBackgroundDrawable = backgroundDrawable;
+                    oldBackgroundMotion = backgroundMotion;
                 }
                 if (newDrawable instanceof MotionBackgroundDrawable) {
                     MotionBackgroundDrawable motionBackgroundDrawable = (MotionBackgroundDrawable) newDrawable;
                     motionBackgroundDrawable.setParentView(backgroundView);
                 }
                 backgroundDrawable = newDrawable;
+                if (attached && backgroundDrawable instanceof ChatBackgroundDrawable) {
+                    ((ChatBackgroundDrawable) backgroundDrawable).onAttachedToWindow(this);
+                }
+                backgroundMotion = newMotion;
+                themeAnimationValue = 0f;
+                checkMotion();
             }
-            float themeAnimationValue = parentLayout != null ? parentLayout.getThemeAnimationValue() : 1.0f;
+            themeAnimationValue = Utilities.clamp(themeAnimationValue + AndroidUtilities.screenRefreshTime / 200, 1f, 0);
             for (int a = 0; a < 2; a++) {
                 Drawable drawable = a == 0 ? oldBackgroundDrawable : backgroundDrawable;
                 if (drawable == null) {
@@ -154,6 +190,19 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                     drawable.setAlpha((int) (255 * themeAnimationValue));
                 } else {
                     drawable.setAlpha(255);
+                }
+                float parallaxScale;
+                float translationX;
+                float translationY;
+                boolean drawMotion = a == 0 ? oldBackgroundMotion : backgroundMotion;
+                if (drawMotion) {
+                    parallaxScale = SizeNotifierFrameLayout.this.parallaxScale;
+                    translationX = SizeNotifierFrameLayout.this.translationX;
+                    translationY = SizeNotifierFrameLayout.this.translationY;
+                } else {
+                    parallaxScale = 1.0f;
+                    translationX = 0;
+                    translationY = 0;
                 }
                 if (drawable instanceof MotionBackgroundDrawable) {
                     MotionBackgroundDrawable motionBackgroundDrawable = (MotionBackgroundDrawable) drawable;
@@ -240,11 +289,41 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                         checkSnowflake(canvas);
                         canvas.restore();
                     }
+                } else {
+                    if (bottomClip != 0) {
+                        canvas.save();
+                        canvas.clipRect(0, 0, getMeasuredWidth(), getRootView().getMeasuredHeight() - bottomClip);
+                    }
+                    if (drawable instanceof ChatBackgroundDrawable) {
+                        ((ChatBackgroundDrawable) drawable).setParent(this);
+                    }
+                    float x = -getMeasuredWidth() * (parallaxScale - 1f) / 2f + translationX;
+                    float y = -getRootView().getMeasuredHeight() * (parallaxScale - 1f) / 2f + translationY;
+                    drawable.setBounds(
+                            (int) x,
+                            (int) (backgroundTranslationY + y),
+                            (int) (getMeasuredWidth() * parallaxScale + x),
+                            (int) (backgroundTranslationY + getRootView().getMeasuredHeight() * parallaxScale + y)
+                    );
+
+                    drawable.draw(canvas);
+                    checkSnowflake(canvas);
+                    if (bottomClip != 0) {
+                        canvas.restore();
+                    }
                 }
                 if (a == 0 && oldBackgroundDrawable != null && themeAnimationValue >= 1.0f) {
+                    if (attached && oldBackgroundDrawable instanceof ChatBackgroundDrawable) {
+                        ((ChatBackgroundDrawable) oldBackgroundDrawable).onDetachedFromWindow(backgroundView);
+                    }
                     oldBackgroundDrawable = null;
+                    oldBackgroundMotion = false;
+                    checkMotion();
                     backgroundView.invalidate();
                 }
+            }
+            if (themeAnimationValue != 1f) {
+                backgroundView.invalidate();
             }
         }
     }
@@ -253,11 +332,28 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         if (backgroundDrawable == bitmap) {
             return;
         }
+        if (backgroundView == null) {
+            addView(backgroundView = new BackgroundView(getContext()), 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            checkLayerType();
+        }
         if (bitmap instanceof MotionBackgroundDrawable) {
             MotionBackgroundDrawable motionBackgroundDrawable = (MotionBackgroundDrawable) bitmap;
             motionBackgroundDrawable.setParentView(backgroundView);
         }
+        if (attached && backgroundDrawable instanceof ChatBackgroundDrawable) {
+            ((ChatBackgroundDrawable) backgroundDrawable).onDetachedFromWindow(backgroundView);
+        }
         backgroundDrawable = bitmap;
+        if (attached && backgroundDrawable instanceof ChatBackgroundDrawable) {
+            ((ChatBackgroundDrawable) backgroundDrawable).onAttachedToWindow(backgroundView);
+        }
+        checkMotion();
+        backgroundView.invalidate();
+        checkLayerType();
+    }
+
+    private void checkMotion() {
+        boolean motion = oldBackgroundMotion || backgroundMotion;
         if (motion) {
             if (parallaxEffect == null) {
                 parallaxEffect = new WallpaperParallaxEffect(getContext());
@@ -265,7 +361,9 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                     translationX = offsetX;
                     translationY = offsetY;
                     bgAngle = angle;
-                    backgroundView.invalidate();
+                    if (backgroundView != null) {
+                        backgroundView.invalidate();
+                    }
                 });
                 if (getMeasuredWidth() != 0 && getMeasuredHeight() != 0) {
                     parallaxScale = parallaxEffect.getScale(getMeasuredWidth(), getMeasuredHeight());
@@ -281,8 +379,6 @@ public class SizeNotifierFrameLayout extends FrameLayout {
             translationX = 0;
             translationY = 0;
         }
-        backgroundView.invalidate();
-        checkLayerType();
     }
 
     private void checkLayerType() {
@@ -357,14 +453,18 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     public void setBottomClip(int value) {
         if (value != bottomClip) {
             bottomClip = value;
-            backgroundView.invalidate();
+            if (backgroundView != null) {
+                backgroundView.invalidate();
+            }
         }
     }
 
     public void setBackgroundTranslation(int translation) {
         if (translation != backgroundTranslationY) {
             backgroundTranslationY = translation;
-            backgroundView.invalidate();
+            if (backgroundView != null) {
+                backgroundView.invalidate();
+            }
         }
     }
 
@@ -375,6 +475,8 @@ public class SizeNotifierFrameLayout extends FrameLayout {
             } else if (emojiHeight != 0) {
                 return emojiHeight;
             }
+            return backgroundTranslationY;
+        } else if (backgroundDrawable instanceof ChatBackgroundDrawable) {
             return backgroundTranslationY;
         }
         return 0;
@@ -395,6 +497,8 @@ public class SizeNotifierFrameLayout extends FrameLayout {
             } else {
                 offset = backgroundTranslationY != 0 ? 0 : -keyboardHeight;
             }
+        } else if (backgroundDrawable instanceof ChatBackgroundDrawable) {
+            offset = backgroundTranslationY;
         }
         return getMeasuredHeight() - offset;
     }
@@ -406,7 +510,9 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     public void setEmojiKeyboardHeight(int height) {
         if (emojiHeight != height) {
             emojiHeight = height;
-            backgroundView.invalidate();
+            if (backgroundView != null) {
+                backgroundView.invalidate();
+            }
         }
     }
 
@@ -414,12 +520,14 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         if (emojiOffset != offset || animationInProgress != animInProgress) {
             emojiOffset = offset;
             animationInProgress = animInProgress;
-            backgroundView.invalidate();
+            if (backgroundView != null) {
+                backgroundView.invalidate();
+            }
         }
     }
 
     private void checkSnowflake(Canvas canvas) {
-        if (Theme.canStartHolidayAnimation() && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
+        if (backgroundView != null && Theme.canStartHolidayAnimation() && LiteMode.isEnabled(LiteMode.FLAG_CHAT_BACKGROUND)) {
             if (snowflakesEffect == null) {
                 snowflakesEffect = new SnowflakesEffect(1);
             }
@@ -438,12 +546,18 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     public void setSkipBackgroundDrawing(boolean skipBackgroundDrawing) {
         if (this.skipBackgroundDrawing != skipBackgroundDrawing) {
             this.skipBackgroundDrawing = skipBackgroundDrawing;
-            backgroundView.invalidate();
+            if (backgroundView != null) {
+                backgroundView.invalidate();
+            }
         }
     }
 
     protected Drawable getNewDrawable() {
         return Theme.getCachedWallpaperNonBlocking();
+    }
+
+    protected boolean getNewDrawableMotion() {
+        return Theme.isWallpaperMotion();
     }
 
     @Override
@@ -493,11 +607,11 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         if (bitmap == null) {
             bitmap = new BlurBitmap();
             bitmap.topBitmap = Bitmap.createBitmap(bitmapW, bitmapH, Bitmap.Config.ARGB_8888);
-            bitmap.topCanvas = new Canvas(bitmap.topBitmap);
+            bitmap.topCanvas = new SimplerCanvas(bitmap.topBitmap);
 
             if (needBlurBottom) {
                 bitmap.bottomBitmap = Bitmap.createBitmap(bitmapW, bitmapH, Bitmap.Config.ARGB_8888);
-                bitmap.bottomCanvas = new Canvas(bitmap.bottomBitmap);
+                bitmap.bottomCanvas = new SimplerCanvas(bitmap.bottomBitmap);
             }
         } else {
             bitmap.topBitmap.eraseColor(Color.TRANSPARENT);
@@ -671,15 +785,23 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
+        attached = true;
         if (needBlur && !blurIsRunning) {
             blurIsRunning = true;
             invalidateBlur = true;
+        }
+        if (backgroundDrawable instanceof ChatBackgroundDrawable) {
+            ((ChatBackgroundDrawable) backgroundDrawable).onAttachedToWindow(backgroundView);
+        }
+        if (oldBackgroundDrawable instanceof ChatBackgroundDrawable) {
+            ((ChatBackgroundDrawable) oldBackgroundDrawable).onAttachedToWindow(backgroundView);
         }
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
+        attached = false;
         blurPaintTop.setShader(null);
         blurPaintTop2.setShader(null);
         blurPaintBottom.setShader(null);
@@ -698,6 +820,13 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         }
         unusedBitmaps.clear();
         blurIsRunning = false;
+
+        if (backgroundDrawable instanceof ChatBackgroundDrawable) {
+            ((ChatBackgroundDrawable) backgroundDrawable).onDetachedFromWindow(backgroundView);
+        }
+        if (oldBackgroundDrawable instanceof ChatBackgroundDrawable) {
+            ((ChatBackgroundDrawable) oldBackgroundDrawable).onDetachedFromWindow(backgroundView);
+        }
     }
 
     public boolean blurWasDrawn() {
@@ -812,6 +941,82 @@ public class SizeNotifierFrameLayout extends FrameLayout {
             if (bottomBitmap != null) {
                 bottomBitmap.recycle();
             }
+        }
+    }
+
+    public static class SimplerCanvas extends Canvas {
+        public SimplerCanvas(Bitmap bitmap) {
+            super(bitmap);
+        }
+
+        // all calls to render text for blur should be replaced with drawRect using SpoilerEffect.layoutDrawMaybe
+
+        @Override
+        public void drawText(@NonNull char[] text, int index, int count, float x, float y, @NonNull Paint paint) {
+            // NOP
+//            super.drawText(text, index, count, x, y, paint);
+        }
+
+        @Override
+        public void drawText(@NonNull String text, int start, int end, float x, float y, @NonNull Paint paint) {
+            // NOP
+//            super.drawText(text, start, end, x, y, paint);
+        }
+
+        @Override
+        public void drawText(@NonNull String text, float x, float y, @NonNull Paint paint) {
+            // NOP
+//            super.drawText(text, x, y, paint);
+        }
+
+        @Override
+        public void drawText(@NonNull CharSequence text, int start, int end, float x, float y, @NonNull Paint paint) {
+            // NOP
+//            super.drawText(text, start, end, x, y, paint);
+        }
+
+        @Override
+        public void drawTextRun(@NonNull CharSequence text, int start, int end, int contextStart, int contextEnd, float x, float y, boolean isRtl, @NonNull Paint paint) {
+            // NOP
+//            super.drawTextRun(text, start, end, contextStart, contextEnd, x, y, isRtl, paint);
+        }
+
+        @Override
+        public void drawTextRun(@NonNull MeasuredText text, int start, int end, int contextStart, int contextEnd, float x, float y, boolean isRtl, @NonNull Paint paint) {
+            // NOP
+//            super.drawTextRun(text, start, end, contextStart, contextEnd, x, y, isRtl, paint);
+        }
+
+        @Override
+        public void drawTextRun(@NonNull char[] text, int index, int count, int contextIndex, int contextCount, float x, float y, boolean isRtl, @NonNull Paint paint) {
+            // NOP
+//            super.drawTextRun(text, index, count, contextIndex, contextCount, x, y, isRtl, paint);
+        }
+
+        @Override
+        public void drawTextOnPath(@NonNull char[] text, int index, int count, @NonNull Path path, float hOffset, float vOffset, @NonNull Paint paint) {
+            // NOP
+//            super.drawTextOnPath(text, index, count, path, hOffset, vOffset, paint);
+        }
+
+        @Override
+        public void drawTextOnPath(@NonNull String text, @NonNull Path path, float hOffset, float vOffset, @NonNull Paint paint) {
+            // NOP
+//            super.drawTextOnPath(text, path, hOffset, vOffset, paint);
+        }
+
+        @Override
+        public boolean clipPath(@NonNull Path path) {
+            // NOP
+            return false;
+//            return super.clipPath(path);
+        }
+
+        @Override
+        public boolean clipPath(@NonNull Path path, @NonNull Region.Op op) {
+            // NOP
+            return false;
+//            return super.clipPath(path, op);
         }
     }
 

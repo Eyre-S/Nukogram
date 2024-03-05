@@ -24,6 +24,7 @@ import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.ShapeDrawable;
+import android.hardware.Camera;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
@@ -74,6 +75,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.camera.CameraController;
 import org.telegram.messenger.camera.CameraSession;
+import org.telegram.messenger.camera.CameraSessionWrapper;
 import org.telegram.messenger.camera.CameraView;
 import org.telegram.messenger.camera.Size;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -648,9 +650,15 @@ public class CameraScanActivity extends BaseFragment {
                     if (getParentActivity() == null) {
                         return;
                     }
-                    if (Build.VERSION.SDK_INT >= 23) {
-                        if (getParentActivity().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                            getParentActivity().requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, BasePermissionsActivity.REQUEST_CODE_EXTERNAL_STORAGE);
+                    final Activity activity = getParentActivity();
+                    if (Build.VERSION.SDK_INT >= 33) {
+                        if (activity.checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
+                            activity.requestPermissions(new String[]{Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO}, BasePermissionsActivity.REQUEST_CODE_EXTERNAL_STORAGE);
+                            return;
+                        }
+                    } else if (Build.VERSION.SDK_INT >= 23) {
+                        if (activity.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                            activity.requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, BasePermissionsActivity.REQUEST_CODE_EXTERNAL_STORAGE);
                             return;
                         }
                     }
@@ -704,7 +712,7 @@ public class CameraScanActivity extends BaseFragment {
                 if (cameraView == null) {
                     return;
                 }
-                CameraSession session = cameraView.getCameraSession();
+                CameraSessionWrapper session = cameraView.getCameraSession();
                 if (session != null) {
                     ShapeDrawable shapeDrawable = (ShapeDrawable) flashButton.getBackground();
                     if (flashAnimator != null) {
@@ -726,10 +734,10 @@ public class CameraScanActivity extends BaseFragment {
                     flashAnimator.start();
                     if (flashButton.getTag() == null) {
                         flashButton.setTag(1);
-                        session.setTorchEnabled(true);
+                        session.setCurrentFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
                     } else {
                         flashButton.setTag(null);
-                        session.setTorchEnabled(false);
+                        session.setCurrentFlashMode(Camera.Parameters.FLASH_MODE_OFF);
                     }
                 }
             });

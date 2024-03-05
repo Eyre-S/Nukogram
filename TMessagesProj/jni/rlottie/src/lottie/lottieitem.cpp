@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2018 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or

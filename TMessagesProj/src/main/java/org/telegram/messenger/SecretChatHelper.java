@@ -66,7 +66,7 @@ public class SecretChatHelper extends BaseController {
         }
     }
 
-    public static int CURRENT_SECRET_CHAT_LAYER = 101;
+    public static int CURRENT_SECRET_CHAT_LAYER = 151;
 
     private ArrayList<Integer> sendingNotifyLayer = new ArrayList<>();
     private SparseArray<ArrayList<TL_decryptedMessageHolder>> secretHolesQueue = new SparseArray<>();
@@ -1019,7 +1019,7 @@ public class SecretChatHelper extends BaseController {
                     }
                     byte[] thumb = ((TLRPC.TL_decryptedMessageMediaDocument) decryptedMessage.media).thumb;
                     TLRPC.PhotoSize photoSize;
-                    if (thumb != null && thumb.length != 0 && thumb.length <= 6000 && decryptedMessage.media.thumb_w <= 100 && decryptedMessage.media.thumb_h <= 100) {
+                    if (thumb != null && thumb.length != 0 && thumb.length <= 20000) {
                         photoSize = new TLRPC.TL_photoCachedSize();
                         photoSize.bytes = thumb;
                         photoSize.w = decryptedMessage.media.thumb_w;
@@ -1926,7 +1926,7 @@ public class SecretChatHelper extends BaseController {
             return;
         }
         startingSecretChat = true;
-        AlertDialog progressDialog = new AlertDialog(context, 3);
+        AlertDialog progressDialog = new AlertDialog(context, AlertDialog.ALERT_TYPE_SPINNER);
         TLRPC.TL_messages_getDhConfig req = new TLRPC.TL_messages_getDhConfig();
         req.random_length = 256;
         req.version = getMessagesStorage().getLastSecretVersion();

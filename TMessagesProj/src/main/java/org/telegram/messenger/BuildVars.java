@@ -28,6 +28,10 @@ public class BuildVars {
     public static String BUILD_VERSION_STRING = BuildConfig.VERSION_NAME; // nuko: use BuildConfig
     public static int APP_ID = BuildConfig.TELEGRAM_APP_ID; // nuko: use BuildConfig
     public static String APP_HASH = BuildConfig.TELEGRAM_APP_HASH; // nuko: use BuildConfig
+    
+    // SafetyNet key for Google Identity SDK, set it to empty to disable
+    // nuko: SafetyNet disabled
+    public static String SAFETYNET_KEY = "";
     // nuko: todo what is this?
     public static String SMS_HASH = isStandaloneApp() ? "w0lkcmTZkKh" : (DEBUG_VERSION ? "O2P2z+/jBpJ" : "oLeq9AcOZkT");
     // nuko: todo playstore app

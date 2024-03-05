@@ -34,7 +34,6 @@ import java.util.Iterator;
 
 public class TopicsNotifySettingsFragments extends BaseFragment {
 
-
     private final int VIEW_TYPE_ADD_EXCEPTION = 1;
     private final int VIEW_TYPE_TOPIC = 2;
     private final int VIEW_TYPE_DIVIDER = 3;
@@ -143,7 +142,7 @@ public class TopicsNotifySettingsFragments extends BaseFragment {
                     showDialog(alertDialog);
                     TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     if (button != null) {
-                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
                     }
                 }
             }

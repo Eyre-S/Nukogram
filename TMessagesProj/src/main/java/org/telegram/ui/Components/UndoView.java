@@ -150,8 +150,6 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_IMPORT_GROUP_NOT_ADMIN = 46;
     public final static int ACTION_IMPORT_INFO = 47;
 
-    public final static int ACTION_PLAYBACK_SPEED_ENABLED = 50;
-    public final static int ACTION_PLAYBACK_SPEED_DISABLED = 51;
     public final static int ACTION_MESSAGE_COPIED = 52;
     public final static int ACTION_FWD_MESSAGES = 53;
     public final static int ACTION_NOTIFY_ON = 54;
@@ -180,6 +178,8 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_PREMIUM_TRANSCRIPTION = 84;
     public final static int ACTION_HINT_SWIPE_TO_REPLY = 85;
     public final static int ACTION_PREMIUM_ALL_FOLDER = 86;
+
+    public final static int ACTION_PROXY_ADDED = 87;
 
     private CharSequence infoText;
     private int hideAnimationType = 1;
@@ -323,7 +323,7 @@ public class UndoView extends FrameLayout {
 
     private boolean isTooltipAction() {
         return currentAction == ACTION_ARCHIVE_HIDDEN || currentAction == ACTION_ARCHIVE_HINT || currentAction == ACTION_ARCHIVE_FEW_HINT ||
-                currentAction == ACTION_ARCHIVE_PINNED || currentAction == ACTION_CONTACT_ADDED || currentAction == ACTION_OWNER_TRANSFERED_CHANNEL ||
+                currentAction == ACTION_ARCHIVE_PINNED || currentAction == ACTION_CONTACT_ADDED || currentAction == ACTION_PROXY_ADDED || currentAction == ACTION_OWNER_TRANSFERED_CHANNEL ||
                 currentAction == ACTION_OWNER_TRANSFERED_GROUP || currentAction == ACTION_QUIZ_CORRECT || currentAction == ACTION_QUIZ_INCORRECT || currentAction == ACTION_CACHE_WAS_CLEARED ||
                 currentAction == ACTION_ADDED_TO_FOLDER || currentAction == ACTION_REMOVED_FROM_FOLDER || currentAction == ACTION_PROFILE_PHOTO_CHANGED ||
                 currentAction == ACTION_CHAT_UNARCHIVED || currentAction == ACTION_VOIP_MUTED || currentAction == ACTION_VOIP_UNMUTED || currentAction == ACTION_VOIP_REMOVED ||
@@ -740,6 +740,10 @@ public class UndoView extends FrameLayout {
                 infoText = LocaleController.formatString("NowInContacts", R.string.NowInContacts, UserObject.getFirstName(user));
                 subInfoText = null;
                 icon = R.raw.contact_check;
+            } else if (action == ACTION_PROXY_ADDED) {
+                infoText = LocaleController.formatString(R.string.ProxyAddedSuccess);
+                subInfoText = null;
+                icon = R.raw.contact_check;
             } else if (action == ACTION_PROFILE_PHOTO_CHANGED) {
                 if (DialogObject.isUserDialog(did)) {
                     if (infoObject == null) {
@@ -827,7 +831,7 @@ public class UndoView extends FrameLayout {
             } else if (action == ACTION_CACHE_WAS_CLEARED) {
                 infoText = this.infoText;
                 subInfoText = null;
-                icon = R.raw.chats_infotip;
+                icon = R.raw.ic_delete;
             } else if (action == ACTION_PREVIEW_MEDIA_DESELECTED) {
                 MediaController.PhotoEntry photo = (MediaController.PhotoEntry) infoObject;
                 infoText = photo.isVideo ? LocaleController.getString("AttachMediaVideoDeselected", R.string.AttachMediaVideoDeselected) : LocaleController.getString("AttachMediaPhotoDeselected", R.string.AttachMediaPhotoDeselected);
@@ -899,7 +903,7 @@ public class UndoView extends FrameLayout {
 
             undoButton.setVisibility(GONE);
         } else if (currentAction == ACTION_IMPORT_NOT_MUTUAL || currentAction == ACTION_IMPORT_GROUP_NOT_ADMIN || currentAction == ACTION_IMPORT_INFO ||
-                currentAction == ACTION_PLAYBACK_SPEED_DISABLED || currentAction == ACTION_PLAYBACK_SPEED_ENABLED || currentAction == ACTION_MESSAGE_COPIED ||
+                currentAction == ACTION_MESSAGE_COPIED ||
                 currentAction == ACTION_FWD_MESSAGES || currentAction == ACTION_NOTIFY_ON || currentAction == ACTION_NOTIFY_OFF ||  currentAction == ACTION_USERNAME_COPIED ||
                 currentAction == ACTION_HASHTAG_COPIED || currentAction == ACTION_TEXT_COPIED || currentAction == ACTION_LINK_COPIED || currentAction == ACTION_PHONE_COPIED ||
                 currentAction == ACTION_AUTO_DELETE_OFF || currentAction == ACTION_AUTO_DELETE_ON || currentAction == ACTION_GIGAGROUP_CANCEL || currentAction == ACTION_GIGAGROUP_SUCCESS ||
@@ -957,16 +961,6 @@ public class UndoView extends FrameLayout {
                 infoOnly = true;
                 layoutParams.topMargin = AndroidUtilities.dp(9);
                 infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            } else if (currentAction == ACTION_PLAYBACK_SPEED_DISABLED) {
-                infoTextView.setText(LocaleController.getString("AudioSpeedNormal", R.string.AudioSpeedNormal));
-                leftImageView.setAnimation(R.raw.audio_stop_speed, 36, 36);
-                timeLeft = 3000;
-                infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            } else if (currentAction == ACTION_PLAYBACK_SPEED_ENABLED) {
-                infoTextView.setText(LocaleController.getString("AudioSpeedFast", R.string.AudioSpeedFast));
-                leftImageView.setAnimation(R.raw.audio_speed, 36, 36);
-                timeLeft = 3000;
-                infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             } else if (currentAction == ACTION_MESSAGE_COPIED || currentAction == ACTION_USERNAME_COPIED || currentAction == ACTION_HASHTAG_COPIED || currentAction == ACTION_TEXT_COPIED || currentAction == ACTION_LINK_COPIED || currentAction == ACTION_PHONE_COPIED || currentAction == ACTION_EMAIL_COPIED) {
                 if (!AndroidUtilities.shouldShowClipboardToast()) {
                     return;
@@ -1053,9 +1047,9 @@ public class UndoView extends FrameLayout {
                 } else {
                     int amount = (Integer) infoObject2;
                     if (count == 1) {
-                        infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("FwdMessageToChats", R.string.FwdMessageToChats, LocaleController.formatPluralString("Chats", amount))));
+                        infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatPluralString("FwdMessageToManyChats", amount)));
                     } else {
-                        infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("FwdMessagesToChats", R.string.FwdMessagesToChats, LocaleController.formatPluralString("Chats", amount))));
+                        infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatPluralString("FwdMessagesToManyChats", amount)));
                     }
                     leftImageView.setAnimation(R.raw.forward, 30, 30);
                     hapticDelay = 300;
